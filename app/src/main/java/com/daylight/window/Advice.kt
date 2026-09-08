@@ -30,11 +30,12 @@ object Advice {
     )
 
     /**
-     * How safe the day's plan is, in plain words.
+     * What today's plan costs, in plain words.
      *
-     * The wording is anchored to two published reference points: the international
-     * workplace limit, and the dose that would just turn this skin pink. Nothing
-     * about it is a judgement made here.
+     * This sits beside the daily-limit setting on the screen, not beside the live
+     * advice, because it describes the setting rather than the moment. The setting's
+     * own description already explains what the limit is, so this says only what
+     * today's plan spends against it — never repeating the explanation.
      */
     fun safetyOf(plan: DayPlan.Plan, profile: RiskProfile): String {
         val burnShare = plan.reddeningPercent
@@ -42,24 +43,22 @@ object Advice {
 
         return when {
             plan.totalMinutes == 0 ->
-                "No time outside today keeps you inside the limit."
+                "There is no time outside today that would keep you under this limit."
 
             withinGuideline && burnShare < 50 ->
-                "Well inside the workplace safety limit, and less than half " +
-                    "what it would take to turn your skin pink. No burn, and no " +
-                    "meaningful addition to your lifetime risk."
+                "Today's plan uses less than half of what it would take to turn your " +
+                    "skin pink. No burn, and nothing meaningful added to your lifetime risk."
 
             withinGuideline ->
-                "Inside the workplace safety limit. No burn risk, and no " +
-                    "meaningful addition to your lifetime risk."
+                "Today's plan stays under this limit. No burn risk, and nothing " +
+                    "meaningful added to your lifetime risk."
 
             profile == RiskProfile.OUTDOOR_WORKER ->
-                "Above the workplace safety limit — about what a construction " +
-                    "worker gets in a day. Still no burn, but this is more than the " +
-                    "guideline advises."
+                "Today's plan goes past the workplace limit, which is what this setting " +
+                    "allows. Still no burn, but more than the guideline advises."
 
             else ->
-                "Just above the workplace safety limit. Still well short of a burn."
+                "Today's plan runs a little past the limit, but stays well short of a burn."
         }
     }
 
@@ -148,14 +147,12 @@ object Advice {
      */
     fun unplannedTripAdvice(minutes: Int, uvNow: Double): String = when {
         minutes <= 0 ->
-            "You have used today's limit. Going out now adds to your lifetime total."
+            "Nothing left for today. Going out now adds to your lifetime total."
         minutes < 15 ->
-            "Only ${Format.duration(minutes)} at this UV before you reach your limit. " +
-                "The sun is strong right now."
+            "You have about ${Format.duration(minutes)}. The sun is strong right now."
         minutes < 60 ->
-            "${Format.duration(minutes)} from now before you reach today's limit."
+            "You have about ${Format.duration(minutes)}."
         else ->
-            "${Format.duration(minutes)} from now before you reach today's limit — " +
-                "the sun is gentle enough that you have plenty of room."
+            "You have about ${Format.duration(minutes)} — plenty of room."
     }
 }

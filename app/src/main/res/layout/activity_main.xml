@@ -96,18 +96,6 @@
             android:textColor="@color/ink_soft"
             android:textSize="15sp" />
 
-        <!-- The safety verdict, in plain words -->
-        <TextView
-            android:id="@+id/safety"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/safety_panel"
-            android:lineSpacingMultiplier="1.45"
-            android:padding="14dp"
-            android:textColor="@color/ink"
-            android:textSize="13.5sp" />
-
         <!-- Today's plan -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -284,6 +272,19 @@
             android:layout_marginTop="8dp"
             android:lineSpacingMultiplier="1.45"
             android:textColor="@color/ink_soft"
+            android:textSize="12.5sp" />
+
+        <!-- What today's plan means against that setting. Lives here, beside the
+             setting it describes, rather than competing with the live advice above. -->
+        <TextView
+            android:id="@+id/safety"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/safety_panel"
+            android:lineSpacingMultiplier="1.45"
+            android:padding="14dp"
+            android:textColor="@color/ink"
             android:textSize="12.5sp" />
 
         <TextView
