@@ -71,13 +71,18 @@ object DayPlan {
      *   doses. Recorded when someone tells the app they went out. It is subtracted
      *   from the day's allowance, so an unplanned hour at lunchtime shortens the
      *   evening session rather than being quietly ignored.
+     * @param earliestMinute the earliest the plan may send someone outside. Morning
+     *   sun is the gentlest of the day, so a later start costs real time — half an
+     *   hour's lie-in can halve the morning session. Whatever the morning does not
+     *   spend rolls into the evening rather than being lost.
      */
     fun build(
         forecast: DayForecast,
         skinType: Int,
         budget: Double,
         shape: Shape,
-        alreadySpent: Double = 0.0
+        alreadySpent: Double = 0.0,
+        earliestMinute: Int = 0
     ): Plan {
         require(budget > 0) { "Daily budget must be above zero, got $budget" }
         require(alreadySpent >= 0) { "Sun already spent cannot be negative, got $alreadySpent" }
@@ -99,8 +104,23 @@ object DayPlan {
         }
 
         val samples = SunModel.interpolate(forecast.hourlyUv)
-        val sunrise = forecast.sunriseMinute
+        // Never before first light, and never before the user is awake.
+        val sunrise = maxOf(forecast.sunriseMinute, earliestMinute)
         val sunset = forecast.sunsetMinute
+
+        // Awake only after the sun has already set: nothing to plan.
+        if (sunrise >= sunset) {
+            return Plan(
+                sessions = emptyList(),
+                dose = 0.0,
+                budget = budget,
+                skinType = skinType,
+                wholeDayIsSafe = false,
+                sunriseMinute = forecast.sunriseMinute,
+                sunsetMinute = sunset,
+                alreadySpent = alreadySpent
+            )
+        }
 
         val wholeDayDose = doseBetween(samples, sunrise, sunset)
         if (wholeDayDose <= remainingBudget) {
@@ -124,10 +144,16 @@ object DayPlan {
                 listOfNotNull(morningSession(samples, sunrise, sunset, remainingBudget))
             Shape.TWO_SESSIONS -> {
                 val half = remainingBudget / 2.0
-                listOfNotNull(
-                    morningSession(samples, sunrise, sunset, half),
-                    eveningSession(samples, sunrise, sunset, half)
+                val morning = morningSession(samples, sunrise, sunset, half)
+                // Anything the morning could not spend — because it was too short, or
+                // started too late to be worth much — goes to the evening rather than
+                // being lost. That is what makes a late start still worth having.
+                val evening = eveningSession(
+                    samples, sunrise, sunset,
+                    allowance = remainingBudget - (morning?.dose ?: 0.0),
+                    notBefore = morning?.endMinute ?: sunrise
                 )
+                listOfNotNull(morning, evening)
             }
         }
 
@@ -168,23 +194,32 @@ object DayPlan {
         return Session(sunrise, end, spent, peakBetween(samples, sunrise, end))
     }
 
-    /** The mirror image: spends an allowance backwards from last light. */
+    /**
+     * The mirror image: spends an allowance backwards from last light.
+     *
+     * [notBefore] stops it walking back into the morning session. With the morning's
+     * unspent allowance rolled in, the evening can otherwise reach far enough back to
+     * overlap it, which would double-count the same sun and produce two sessions
+     * covering the same minutes.
+     */
     private fun eveningSession(
         samples: List<SunModel.Sample>,
         sunrise: Int,
         sunset: Int,
-        allowance: Double
+        allowance: Double,
+        notBefore: Int = sunrise
     ): Session? {
+        val floor = maxOf(sunrise, notBefore)
         var spent = 0.0
         var start = sunset
         for (s in samples.reversed()) {
-            if (s.minuteOfDay >= sunset || s.minuteOfDay < sunrise) continue
+            if (s.minuteOfDay >= sunset || s.minuteOfDay < floor) continue
             val step = s.uv * SunModel.DOSE_PER_UV_PER_MINUTE * SunModel.SAMPLE_MINUTES
             if (spent + step > allowance) break
             spent += step
             start = s.minuteOfDay
         }
-        start = maxOf(start, sunrise)
+        start = maxOf(start, floor)
         if (sunset - start < SunModel.SHORTEST_USEFUL_WINDOW_MINUTES) return null
         return Session(start, sunset, spent, peakBetween(samples, start, sunset))
     }

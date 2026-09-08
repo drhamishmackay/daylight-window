@@ -230,6 +230,95 @@ class DayPlanTest {
         )
     }
 
+    // A later start costs real time, because the gentlest sun of the day is the
+    // earliest. This is the trade-off the wake-time setting exists to make visible.
+    @Test
+    fun `a later start buys less time outside`() {
+        val fromDawn = DayPlan.build(
+            melbourneSpring, 1, budget, DayPlan.Shape.TWO_SESSIONS, earliestMinute = 0
+        )
+        val fromEight = DayPlan.build(
+            melbourneSpring, 1, budget, DayPlan.Shape.TWO_SESSIONS,
+            earliestMinute = 8 * 60
+        )
+        assertTrue(
+            "Starting at 8am should give less than starting at first light",
+            fromEight.totalMinutes < fromDawn.totalMinutes
+        )
+        assertTrue("And still fit the budget", fromEight.dose <= budget + 1e-9)
+    }
+
+    @Test
+    fun `no session ever starts before the user is awake`() {
+        for (wake in listOf(7 * 60, 9 * 60, 11 * 60, 15 * 60)) {
+            val plan = DayPlan.build(
+                melbourneSpring, 1, budget, DayPlan.Shape.TWO_SESSIONS,
+                earliestMinute = wake
+            )
+            plan.sessions.forEach {
+                assertTrue(
+                    "Session at ${it.startMinute} starts before waking at $wake",
+                    it.startMinute >= wake
+                )
+            }
+        }
+    }
+
+    // The morning's unspent allowance rolls into the evening. That larger evening
+    // allowance could otherwise reach back far enough to overlap the morning session,
+    // double-counting the same sun.
+    @Test
+    fun `sessions never overlap, whatever the wake time`() {
+        val days = listOf(melbourneSpring, melbourneWinter, cairnsSummer)
+        for (day in days) {
+            for (wake in 0..(14 * 60) step 30) {
+                val plan = DayPlan.build(
+                    day, 1, budget, DayPlan.Shape.TWO_SESSIONS, earliestMinute = wake
+                )
+                for (i in 1 until plan.sessions.size) {
+                    assertTrue(
+                        "Sessions overlap on ${day.placeName} waking at $wake",
+                        plan.sessions[i].startMinute >= plan.sessions[i - 1].endMinute
+                    )
+                }
+                assertTrue(
+                    "Budget exceeded on ${day.placeName} waking at $wake",
+                    plan.dose <= budget + 1e-9
+                )
+            }
+        }
+    }
+
+    // A late start should not simply lose the morning's share: it goes to the evening.
+    @Test
+    fun `the morning's unspent allowance goes to the evening`() {
+        val late = DayPlan.build(
+            melbourneSpring, 1, budget, DayPlan.Shape.TWO_SESSIONS,
+            earliestMinute = 10 * 60
+        )
+        val fromDawn = DayPlan.build(
+            melbourneSpring, 1, budget, DayPlan.Shape.TWO_SESSIONS, earliestMinute = 0
+        )
+        val lateEvening = late.sessions.lastOrNull()
+        val dawnEvening = fromDawn.sessions.lastOrNull()
+        assertTrue("Both days should have an evening session",
+            lateEvening != null && dawnEvening != null)
+        assertTrue(
+            "A late start should leave a longer evening, not an equal one",
+            lateEvening!!.lengthMinutes > dawnEvening!!.lengthMinutes
+        )
+    }
+
+    @Test
+    fun `waking after sunset leaves nothing to plan`() {
+        val plan = DayPlan.build(
+            melbourneSpring, 1, budget, DayPlan.Shape.TWO_SESSIONS,
+            earliestMinute = 20 * 60
+        )
+        assertTrue(plan.sessions.isEmpty())
+        assertEquals(0, plan.totalMinutes)
+    }
+
     // Alarms must never stack up. Four fixed slots, and re-planning reuses them.
     @Test
     fun `alerts reuse a fixed set of slots so they cannot accumulate`() {

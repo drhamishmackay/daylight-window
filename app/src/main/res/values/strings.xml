@@ -45,6 +45,14 @@
     <string name="trip_stop">I am back inside</string>
     <string name="trip_running">Outside %1$s so far. About %2$s left before you reach today\'s limit.</string>
 
+    <string name="label_wake">Earliest I would go outside</string>
+    <string name="wake_unset">Set a time</string>
+    <string name="wake_set">From %1$s</string>
+    <string name="wake_note_unset">The gentlest sun of the day is at first light, so the app will suggest dawn until you tell it otherwise.</string>
+    <string name="wake_note_cost">Starting at %1$s gives you %2$s outside. From first light at %3$s it would have been %4$s.</string>
+    <string name="wake_note_free">Starting at %1$s costs you nothing today — the sun is gentle enough that you are not missing anything by waking later.</string>
+    <string name="wake_note_late">Nothing left by %1$s today. The sun is down or too strong by then.</string>
+
     <string name="label_skin">Skin type</string>
     <string name="label_profile">How much sun per day</string>
     <string name="label_shape">How to split your time</string>

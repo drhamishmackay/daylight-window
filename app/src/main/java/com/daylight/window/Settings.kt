@@ -40,6 +40,27 @@ class Settings(context: Context) {
         }
         set(value) = prefs.edit().putString(KEY_SHAPE, value.name).apply()
 
+    /**
+     * The earliest the app may send you outside, in minutes past midnight.
+     *
+     * There is no default: the app asks rather than choosing, because the cost of
+     * guessing is either being woken at dawn or losing most of the morning session.
+     * Null means it has not been set yet.
+     */
+    var earliestMinute: Int?
+        get() {
+            val stored = prefs.getInt(KEY_EARLIEST, -1)
+            return if (stored < 0) null else stored
+        }
+        set(value) {
+            if (value != null) {
+                require(value in 0 until 24 * 60) {
+                    "Wake time must be a minute of the day, got $value"
+                }
+            }
+            prefs.edit().putInt(KEY_EARLIEST, value ?: -1).apply()
+        }
+
     /** Alarm, notification, or nothing. */
     var alertStyle: AlertStyle
         get() {
@@ -119,5 +140,6 @@ class Settings(context: Context) {
         private const val KEY_USED = "dose_used_today"
         private const val KEY_TRIP_START = "trip_started_at"
         private const val KEY_DAY_STAMP = "day_stamp"
+        private const val KEY_EARLIEST = "earliest_minute"
     }
 }

@@ -1,6 +1,7 @@
 package com.daylight.window
 
 import android.Manifest
+import android.app.TimePickerDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
@@ -43,6 +44,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var alertSpinner: Spinner
     private lateinit var profileNote: TextView
     private lateinit var alertNote: TextView
+    private lateinit var wakeButton: Button
+    private lateinit var wakeNote: TextView
 
     private var forecast: DayForecast? = null
 
@@ -83,6 +86,8 @@ class MainActivity : AppCompatActivity() {
         alertSpinner = findViewById(R.id.alerts)
         profileNote = findViewById(R.id.profile_note)
         alertNote = findViewById(R.id.alert_note)
+        wakeButton = findViewById(R.id.wake_time)
+        wakeNote = findViewById(R.id.wake_note)
 
         paintCurve()
         setUpPickers()
@@ -95,6 +100,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.test_alert).setOnClickListener { testAlert() }
         findViewById<Button>(R.id.to_clock).setOnClickListener { sendToClockApp() }
         findViewById<Button>(R.id.open_clock).setOnClickListener { openClockApp() }
+        wakeButton.setOnClickListener { pickWakeTime() }
 
         requestLocation()
     }
@@ -279,7 +285,8 @@ class MainActivity : AppCompatActivity() {
             skinType = settings.skinType,
             budget = settings.riskProfile.dailyDose,
             shape = settings.planShape,
-            alreadySpent = settings.doseUsedToday
+            alreadySpent = settings.doseUsedToday,
+            earliestMinute = settings.earliestMinute ?: 0
         )
         val advice = Advice.describe(
             plan = plan,
@@ -298,6 +305,7 @@ class MainActivity : AppCompatActivity() {
         profileNote.text = settings.riskProfile.plainDescription
         alertNote.text = settings.alertStyle.explanation
 
+        renderWake(day, plan)
         renderPlan(plan, nowMinute)
         renderTotal(plan)
         renderTrip(day, plan, nowMinute)
@@ -345,6 +353,64 @@ class MainActivity : AppCompatActivity() {
             else -> R.color.ink_soft
         }
     )
+
+    /**
+     * Asks what time the user is willing to go out, and shows what that choice costs
+     * today — in minutes, against what first light would have given. Morning sun is
+     * the gentlest of the day, so the difference is often large and worth seeing.
+     */
+    private fun pickWakeTime() {
+        val current = settings.earliestMinute ?: (forecast?.sunriseMinute ?: 7 * 60)
+        TimePickerDialog(
+            this,
+            { _, hour, minute ->
+                settings.earliestMinute = hour * 60 + minute
+                syncAlerts()
+                refresh()
+            },
+            current / 60,
+            current % 60,
+            false
+        ).show()
+    }
+
+    private fun renderWake(day: DayForecast, plan: DayPlan.Plan) {
+        val earliest = settings.earliestMinute
+
+        if (earliest == null) {
+            wakeButton.text = getString(R.string.wake_unset)
+            wakeNote.text = getString(R.string.wake_note_unset)
+            return
+        }
+
+        wakeButton.text = getString(R.string.wake_set, Format.clock(earliest))
+
+        // What first light would have given, for comparison.
+        val fromDawn = DayPlan.build(
+            forecast = day,
+            skinType = settings.skinType,
+            budget = settings.riskProfile.dailyDose,
+            shape = settings.planShape,
+            alreadySpent = settings.doseUsedToday,
+            earliestMinute = 0
+        )
+
+        wakeNote.text = when {
+            plan.totalMinutes == 0 ->
+                getString(R.string.wake_note_late, Format.clock(earliest))
+
+            plan.totalMinutes >= fromDawn.totalMinutes ->
+                getString(R.string.wake_note_free, Format.clock(earliest))
+
+            else -> getString(
+                R.string.wake_note_cost,
+                Format.clock(earliest),
+                Format.duration(plan.totalMinutes),
+                Format.clock(day.sunriseMinute),
+                Format.duration(fromDawn.totalMinutes)
+            )
+        }
+    }
 
     private fun renderPlan(plan: DayPlan.Plan, nowMinute: Int) {
         planList.removeAllViews()
@@ -464,7 +530,8 @@ class MainActivity : AppCompatActivity() {
             skinType = settings.skinType,
             budget = settings.riskProfile.dailyDose,
             shape = settings.planShape,
-            alreadySpent = settings.doseUsedToday
+            alreadySpent = settings.doseUsedToday,
+            earliestMinute = settings.earliestMinute ?: 0
         )
         val slots = Alerts.slotsFor(plan)
 
