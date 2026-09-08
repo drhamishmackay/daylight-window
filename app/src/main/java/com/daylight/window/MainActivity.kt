@@ -94,6 +94,7 @@ class MainActivity : AppCompatActivity() {
         tripButton.setOnClickListener { toggleTrip() }
         findViewById<Button>(R.id.test_alert).setOnClickListener { testAlert() }
         findViewById<Button>(R.id.to_clock).setOnClickListener { sendToClockApp() }
+        findViewById<Button>(R.id.open_clock).setOnClickListener { openClockApp() }
 
         requestLocation()
     }
@@ -248,11 +249,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun syncAlerts() {
-        if (settings.alertStyle == AlertStyle.IN_APP_ONLY) {
-            Reminders.cancelAll(this)
-        } else {
-            Reminders.scheduleDailyReplan(this)
-            Reminders.scheduleToday(this)
+        when (settings.alertStyle) {
+            AlertStyle.IN_APP_ONLY -> Reminders.cancelAll(this)
+
+            // The clock app holds the alarms, so the app's own ones are cleared to
+            // avoid two alerts for the same moment.
+            AlertStyle.CLOCK_APP -> {
+                Reminders.cancelAll(this)
+                if (forecast != null) sendToClockApp()
+            }
+
+            else -> {
+                Reminders.scheduleDailyReplan(this)
+                Reminders.scheduleToday(this)
+            }
         }
     }
 
@@ -459,15 +469,32 @@ class MainActivity : AppCompatActivity() {
         val slots = Alerts.slotsFor(plan)
 
         if (slots.isEmpty()) {
-            tripStatus.text = getString(R.string.to_clock_none)
+            alertNote.text = getString(R.string.to_clock_none)
             return
         }
         if (!Alerts.clockAppAvailable(this)) {
-            tripStatus.text = getString(R.string.to_clock_missing)
+            alertNote.text = getString(R.string.to_clock_missing)
             return
         }
-        Alerts.exportToClockApp(this, slots)
-        tripStatus.text = getString(R.string.to_clock_done)
+        try {
+            Alerts.exportToClockApp(this, slots)
+            alertNote.text = getString(R.string.to_clock_done, slots.size)
+        } catch (e: SecurityException) {
+            // The clock app refused. Say so rather than reporting a success that did
+            // not happen — a silent failure here means missed alarms.
+            alertNote.text = getString(R.string.to_clock_refused)
+        } catch (e: android.content.ActivityNotFoundException) {
+            alertNote.text = getString(R.string.to_clock_missing)
+        }
+    }
+
+    /** Opens the clock app so the alarms can be checked. */
+    private fun openClockApp() {
+        try {
+            Alerts.openClockApp(this)
+        } catch (e: android.content.ActivityNotFoundException) {
+            alertNote.text = getString(R.string.to_clock_missing)
+        }
     }
 
     private fun toggleTrip() {

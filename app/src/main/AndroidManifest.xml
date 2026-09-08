@@ -9,6 +9,17 @@
     <!-- Lets the window reminder land on the minute rather than whenever the system
          next wakes; the app still works without it, just less precisely. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Required to write alarms into the phone's clock app. Without it every request
+         is silently refused and nothing appears in the alarm list. -->
+    <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+
+    <!-- Android 11 and later hide other apps unless they are named here. Without this
+         the check for "is there a clock app" always answers no, even on a Pixel. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.SET_ALARM" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"

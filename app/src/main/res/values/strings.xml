@@ -84,9 +84,11 @@
     <string name="test_alert_body">This is what an alert looks like. Real ones arrive when it is time to go out or come back in.</string>
     <string name="test_alert_off">Alerts are switched off. Change \"How to tell me\" first.</string>
 
-    <string name="to_clock">Put today\'s times in my clock app</string>
-    <string name="to_clock_note">Adds today\'s times as ordinary alarms you can see and edit in your clock app. One-off — it does not update itself, so you would repeat it each day. The ringing alert above updates itself automatically.</string>
-    <string name="to_clock_done">Sent to your clock app. Check your alarms.</string>
+    <string name="to_clock">Send today\'s times now</string>
+    <string name="open_clock">Open clock</string>
+    <string name="to_clock_note">Alarms repeat daily and carry fixed names, so each day\'s plan moves the same alarms rather than adding new ones. They are sent automatically when you open the app; this button sends them again if you want to be sure.</string>
+    <string name="to_clock_done">Done — %1$d alarms set in your clock app.</string>
+    <string name="to_clock_refused">Your clock app refused the alarms. Open it and check whether this app is allowed to set alarms.</string>
     <string name="to_clock_none">There is nothing planned today to send.</string>
-    <string name="to_clock_missing">No clock app found that accepts alarms.</string>
+    <string name="to_clock_missing">No clock app on this phone accepts alarms. Use the ringing alert instead.</string>
 </resources>

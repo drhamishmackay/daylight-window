@@ -344,13 +344,28 @@
             android:textColor="@color/accent"
             android:textSize="13sp" />
 
-        <Button
-            android:id="@+id/to_clock"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:text="@string/to_clock"
-            android:textAllCaps="false" />
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/to_clock"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/to_clock"
+                android:textAllCaps="false" />
+
+            <Button
+                android:id="@+id/open_clock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/open_clock"
+                android:textAllCaps="false" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"

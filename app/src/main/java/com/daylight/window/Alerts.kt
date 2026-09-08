@@ -3,22 +3,32 @@ package com.daylight.window
 import android.content.Context
 import android.content.Intent
 import android.provider.AlarmClock
+import java.util.Calendar
 
 /**
  * How the app tells you it is time to go out or come back in.
  */
 enum class AlertStyle(val label: String, val explanation: String) {
     /**
-     * A ringing, full-screen alert owned by this app. Deliberately not an entry in the
-     * phone's clock app: what a clock app does with the same alarm sent again the next
-     * day is up to that clock app, and some add a second one rather than replacing it.
-     * Keeping the alarm here is what guarantees it never piles up.
+     * Real alarms in the phone's own clock app. Set as repeating daily alarms with
+     * fixed labels, so each day's re-plan moves the existing entry rather than adding
+     * another.
+     */
+    CLOCK_APP(
+        "Alarms in my clock app",
+        "Sets real alarms in your phone's clock app, so they ring like any other alarm " +
+            "and you can see and edit them there. They move themselves each day as the " +
+            "sun shifts, rather than piling up."
+    ),
+
+    /**
+     * A ringing, full-screen alert owned by this app, for phones with no clock app that
+     * accepts alarms.
      */
     ALARM(
         "Ringing alert (from this app)",
-        "Rings and takes over the screen like a wake-up alarm, but it lives in this " +
-            "app rather than your clock app — that is what stops it piling up a new " +
-            "alarm every day. It will not appear in your list of alarms."
+        "Rings and takes over the screen like a wake-up alarm, but lives in this app " +
+            "rather than your clock app, so it will not appear in your alarm list."
     ),
 
     /** A notification: quieter, easy to miss. */
@@ -34,7 +44,7 @@ enum class AlertStyle(val label: String, val explanation: String) {
     );
 
     companion object {
-        val DEFAULT = ALARM
+        val DEFAULT = CLOCK_APP
 
         fun fromName(name: String): AlertStyle =
             entries.firstOrNull { it.name == name }
@@ -120,31 +130,59 @@ object Alerts {
         return slots
     }
 
+    /** Every day of the week: makes each alarm a permanent repeating one. */
+    private val EVERY_DAY = arrayListOf(
+        Calendar.MONDAY, Calendar.TUESDAY, Calendar.WEDNESDAY, Calendar.THURSDAY,
+        Calendar.FRIDAY, Calendar.SATURDAY, Calendar.SUNDAY
+    )
+
     /**
-     * Offers the plan to the phone's clock app as ordinary alarms, for people who
-     * would rather see them alongside their other alarms.
+     * Writes the plan into the phone's own clock app, so the times sit alongside every
+     * other alarm and ring the way a wake-up alarm rings.
      *
-     * This is a one-off export, not the app's alarm mechanism, because what a clock
-     * app does with a repeated request is up to that clock app — some replace an
-     * identical alarm, others add a second one. The app's own alarms are the reliable
-     * path; this exists because some people simply prefer their clock app.
+     * Each alarm is set to repeat on all seven days and carries a fixed label. That is
+     * what stops them accumulating: a repeating alarm is one permanent entry, so
+     * tomorrow's re-plan moves the existing alarm to the new time instead of adding a
+     * second one. A one-off alarm would leave a spent entry behind every day.
+     *
+     * Requires the SET_ALARM permission and a <queries> entry for the clock app; both
+     * are declared in the manifest. Without either, the request is silently refused.
      */
     fun exportToClockApp(context: Context, slots: List<Slot>) {
         for (slot in slots) {
             val intent = Intent(AlarmClock.ACTION_SET_ALARM).apply {
                 putExtra(AlarmClock.EXTRA_HOUR, slot.minuteOfDay / 60)
                 putExtra(AlarmClock.EXTRA_MINUTES, slot.minuteOfDay % 60)
-                putExtra(
-                    AlarmClock.EXTRA_MESSAGE,
-                    if (slot.kind == AlertKind.GO_OUT) "Daylight — go outside"
-                    else "Daylight — head back in"
-                )
+                putExtra(AlarmClock.EXTRA_MESSAGE, labelFor(slot))
+                putExtra(AlarmClock.EXTRA_DAYS, EVERY_DAY)
+                putExtra(AlarmClock.EXTRA_VIBRATE, true)
+                // Ask the clock app to set it without opening its own screen. Some
+                // clock apps show their screen anyway; the alarm is still set.
+                putExtra(AlarmClock.EXTRA_SKIP_UI, true)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            if (intent.resolveActivity(context.packageManager) != null) {
-                context.startActivity(intent)
-            }
+            context.startActivity(intent)
         }
+    }
+
+    /**
+     * The alarm's name in the clock app. Fixed per slot so the same entry is updated
+     * each day rather than a new one created, and recognisable at a glance in a list
+     * of alarms.
+     */
+    private fun labelFor(slot: Slot): String = when (slot.id) {
+        SLOT_FIRST_OUT -> "Daylight · go outside"
+        SLOT_FIRST_IN -> "Daylight · head back in"
+        SLOT_SECOND_OUT -> "Daylight · second time outside"
+        SLOT_LAST_IN -> "Daylight · that is today's sun"
+        else -> "Daylight"
+    }
+
+    /** Opens the clock app's alarm list. */
+    fun openClockApp(context: Context) {
+        val intent = Intent(AlarmClock.ACTION_SHOW_ALARMS)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
     }
 
     fun clockAppAvailable(context: Context): Boolean =

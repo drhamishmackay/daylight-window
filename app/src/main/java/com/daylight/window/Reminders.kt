@@ -84,7 +84,10 @@ object Reminders {
      */
     fun scheduleToday(context: Context) {
         val settings = Settings(context)
+        // Nothing to schedule here for either of these: the clock app owns the alarms
+        // in one case, and there are no alerts at all in the other.
         if (settings.alertStyle == AlertStyle.IN_APP_ONLY) return
+        if (settings.alertStyle == AlertStyle.CLOCK_APP) return
         if (!settings.hasStoredLocation()) return
 
         val now = Calendar.getInstance()
@@ -142,6 +145,7 @@ object Reminders {
     fun fire(context: Context, kind: AlertKind, message: String) {
         val settings = Settings(context)
         if (settings.alertStyle == AlertStyle.IN_APP_ONLY) return
+        if (settings.alertStyle == AlertStyle.CLOCK_APP) return
 
         val goingOut = kind == AlertKind.GO_OUT
         val channel = if (goingOut) CHANNEL_GO_OUT else CHANNEL_COME_IN
