@@ -75,4 +75,8 @@
         <item>V — very rarely burns</item>
         <item>VI — never burns</item>
     </string-array>
+
+    <string name="source_forecast_only">Forecast for your location. No measuring station near enough to check it against.</string>
+    <string name="source_confirmed">Forecast, matching the live reading at the %1$s measuring station.</string>
+    <string name="source_corrected">Adjusted to the live reading at the %1$s measuring station, which is showing %2$s right now.</string>
 </resources>

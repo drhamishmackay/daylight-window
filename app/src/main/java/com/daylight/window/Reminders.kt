@@ -87,8 +87,14 @@ object Reminders {
         if (settings.alertStyle == AlertStyle.IN_APP_ONLY) return
         if (!settings.hasStoredLocation()) return
 
+        val now = Calendar.getInstance()
+        val nowMinuteForFetch = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
         val forecast = try {
-            runBlocking { Forecast.fetch(settings.lastLatitude, settings.lastLongitude) }
+            runBlocking {
+                Forecast.fetchCorrected(
+                    settings.lastLatitude, settings.lastLongitude, nowMinuteForFetch
+                )
+            }
         } catch (e: ForecastUnavailable) {
             // Without a forecast there is nothing to schedule. Tomorrow's re-plan tries
             // again; a missed nudge is not worth waking someone for.
@@ -104,8 +110,7 @@ object Reminders {
         val slots = Alerts.slotsFor(plan)
         val alarms = context.getSystemService(AlarmManager::class.java)
 
-        val now = Calendar.getInstance()
-        val nowMinute = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+        val nowMinute = nowMinuteForFetch
 
         // Clear every slot first, then arm only the ones today actually uses.
         for (slotId in Alerts.ALL_SLOTS) {

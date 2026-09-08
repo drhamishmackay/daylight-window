@@ -12,8 +12,18 @@ data class DayForecast(
     val hourlyUv: List<Double>,
     val sunriseMinute: Int,
     val sunsetMinute: Int,
-    val fetchedAtMillis: Long
-)
+    val fetchedAtMillis: Long,
+    /**
+     * A ground-station measurement used to correct the forecast, when one was
+     * available near enough to be relevant. Null everywhere without a nearby station.
+     */
+    val liveReading: LiveReading? = null,
+    /** What the forecast was scaled by; 1.0 means it was used unchanged. */
+    val correction: Double = 1.0
+) {
+    /** True when a real measurement moved the numbers. */
+    val wasCorrected: Boolean get() = liveReading != null && correction != 1.0
+}
 
 /**
  * Fetches the hourly UV forecast from Open-Meteo, which is free, needs no key, and
@@ -22,6 +32,33 @@ data class DayForecast(
 object Forecast {
 
     private const val TIMEOUT_MS = 15_000
+
+    /**
+     * Today's forecast, corrected against a nearby ground station where one exists.
+     *
+     * The correction is applied to the whole curve. A model running 20 per cent high
+     * at noon is generally running high all day — the usual cause is cloud the model
+     * did not predict, which persists for hours rather than minutes.
+     */
+    suspend fun fetchCorrected(
+        latitude: Double,
+        longitude: Double,
+        nowMinuteOfDay: Int
+    ): DayForecast {
+        val raw = fetch(latitude, longitude)
+        val live = LiveUv.nearestReading(latitude, longitude) ?: return raw
+
+        val samples = SunModel.interpolate(raw.hourlyUv)
+        val forecastNow = SunModel.uvAt(samples, nowMinuteOfDay)
+        val factor = LiveUv.correctionFactor(forecastNow, live.uv)
+        if (factor == 1.0) return raw.copy(liveReading = live)
+
+        return raw.copy(
+            hourlyUv = raw.hourlyUv.map { it * factor },
+            liveReading = live,
+            correction = factor
+        )
+    }
 
     suspend fun fetch(latitude: Double, longitude: Double): DayForecast =
         withContext(Dispatchers.IO) {

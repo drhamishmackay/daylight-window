@@ -75,5 +75,16 @@ object Evidence {
         url = "https://open-meteo.com/"
     )
 
-    val ALL = listOf(ICNIRP, OUTDOOR_WORKERS, REDDENING_THRESHOLDS, THRESHOLD_OVERLAP, UNITS, FORECAST)
+    val LIVE_STATIONS = Source(
+        id = "arpansa",
+        title = "Live measurements (Australia)",
+        detail = "In Australia, ARPANSA runs ground stations that measure ultraviolet " +
+            "directly and publish it every minute. When you are near one, the app checks " +
+            "the forecast against what is actually being measured and adjusts it. " +
+            "Forecasts are models and can run high or low, usually because of cloud they " +
+            "did not predict.",
+        url = "https://uvdata.arpansa.gov.au/UVLevel"
+    )
+
+    val ALL = listOf(ICNIRP, OUTDOOR_WORKERS, REDDENING_THRESHOLDS, THRESHOLD_OVERLAP, UNITS, FORECAST, LIVE_STATIONS)
 }

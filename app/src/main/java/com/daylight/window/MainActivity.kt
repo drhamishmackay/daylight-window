@@ -226,7 +226,10 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val day = Forecast.fetch(latitude, longitude)
+                val nowMinute = Calendar.getInstance().let {
+                    it.get(Calendar.HOUR_OF_DAY) * 60 + it.get(Calendar.MINUTE)
+                }
+                val day = Forecast.fetchCorrected(latitude, longitude, nowMinute)
                 forecast = day
                 placeText.text = day.placeName
                 syncAlerts()
@@ -288,6 +291,17 @@ class MainActivity : AppCompatActivity() {
             R.string.peak_today,
             String.format("%.1f", samples.maxOf { it.uv })
         )
+        findViewById<TextView>(R.id.source_note).text = when {
+            day.wasCorrected -> getString(
+                R.string.source_corrected,
+                day.liveReading!!.stationName,
+                String.format("%.1f", day.liveReading.uv)
+            )
+            day.liveReading != null -> getString(
+                R.string.source_confirmed, day.liveReading.stationName
+            )
+            else -> getString(R.string.source_forecast_only)
+        }
         curve.setDay(
             samples,
             plan.sessions.map {
