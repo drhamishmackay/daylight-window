@@ -1,5 +1,9 @@
 # Daylight Window
 
+[![Build](https://github.com/drhamishmackay/daylight-window/actions/workflows/build.yml/badge.svg)](https://github.com/drhamishmackay/daylight-window/actions/workflows/build.yml)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
+[![Download APK](https://img.shields.io/github/v/release/drhamishmackay/daylight-window?label=download%20apk)](https://github.com/drhamishmackay/daylight-window/releases/latest)
+
 **An Android app that plans your day around the sun, so you can stop thinking about it.**
 
 Most UV apps answer *how dangerous is the sun right now?* — which leaves you to do something with the number. This one answers a more useful question: **when should I go outside, and when should I come back in?**
@@ -138,7 +142,7 @@ No amount of ultraviolet is completely free of risk — that is measured, not a 
 Requires JDK 17 and the Android SDK (platform 34).
 
 ```
-git clone https://github.com/<you>/daylight-window.git
+git clone https://github.com/drhamishmackay/daylight-window.git
 cd daylight-window
 ./gradlew assembleDebug
 ```
@@ -155,7 +159,7 @@ The APK lands in `app/build/outputs/apk/debug/`. To run the tests:
 ./gradlew installDebug
 ```
 
-Or copy `app-debug.apk` across and open it, allowing installation from unknown sources. There is no Play Store listing — this is a personal tool, and building it or sideloading it needs no developer account.
+Or [download the APK from the latest release](https://github.com/drhamishmackay/daylight-window/releases/latest), open it on your phone, and allow installation from unknown sources. There is no Play Store listing — this is a personal tool, and installing it needs no developer account.
 
 ## How it is put together
 
