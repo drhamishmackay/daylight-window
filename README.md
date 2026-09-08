@@ -117,13 +117,48 @@ That is why the app talks about the gentlest daylight rather than safe daylight,
 
 **Solar flares.** The extra ultraviolet is absorbed ~130 km up; what reaches the ground is essentially unchanged, and NASA is explicit that flare UV does not contribute to sunburn. Solar activity can even thicken the ozone slightly. Including it would be a number that looks scientific and changes nothing.
 
+## When you go outside
+
+The gentlest sun of the day is at first light — which is a mathematically correct and practically useless thing to tell someone. So you set the earliest you would actually go out, and the app plans from there, showing what the choice costs:
+
+> Starting at 7:30am gives you 1h 44m outside. From first light at 6:31am it would have been 2h 33m.
+
+There is no default. The app asks, because guessing means either a dawn alarm or silently losing most of the morning.
+
+Whatever the morning cannot spend rolls into the evening, which is what keeps a late start worth having. In Melbourne today:
+
+| Wake at | Morning | Evening | Total |
+|---|---|---|---|
+| 6:31am (first light) | 6:31–8:10 | 5:10–6:04pm | 153 min |
+| 7:30am | 7:30–8:20 | 5:10–6:04pm | 104 min |
+| 9:00am | — | 4:50–6:04pm | 74 min |
+| Noon | — | 4:50–6:04pm | 74 min |
+
+Sleeping past 9am costs nothing more, because by then the evening session is doing all the work.
+
+### Latitude matters more than the wake time
+
+Same 7:30am start, same day, different places:
+
+| | Peak UV | Time outside |
+|---|---|---|
+| London | 1.8 | 147 min |
+| Reykjavik | 3.4 | 85 min |
+| Oslo | 2.7 | 80 min |
+| Melbourne | 5.6 | 54 min |
+| Cairns | 8.2 | 35 min |
+
+London gives nearly three times what Melbourne does for the same lie-in. Australia is the hard case, and a late riser in Scandinavia barely pays for it.
+
 ## Alarms that do not pile up
 
-Four fixed slots, overwritten each morning rather than added to. After a year you have four alarms that have drifted a few minutes with the sun — not a thousand.
+The alarm is built the way Google's own Clock app builds one, read from the [DeskClock source](https://github.com/amirzaidi/DeskClock) rather than guessed: a foreground service loops the ringtone on the alarm audio stream, a wake lock keeps it going when the screen sleeps, and a full-screen screen appears over the lock screen and over other apps until dismissed. Back does nothing, so a pocketed phone cannot silence it. It stops itself after five minutes rather than running the battery flat in a bag.
 
-A "come back inside" alarm is set whenever a session **ends while the sun is still up**. It is skipped when the session runs to sunset, because from there UV only falls and there is nothing to come inside from. That distinction matters for anyone who wants two shorter sessions rather than staying out until dark.
+**Why it is not an entry in your clock app.** An app can add alarms there but can never change or remove them: Google Clock declares its alarm store `android:exported="false"`, so no permission grants access, and `ACTION_DISMISS_ALARM` only skips the next occurrence of a repeating alarm rather than deleting it. These times shift a minute or two every day, so that route would leave a new alarm behind daily with no way to clear it — and Google Clock has no bulk delete. Keeping the alarm inside the app is what makes it moveable.
 
-Alarm, notification, or nothing — alarm by default.
+Sending the times to your clock app is still offered as a second option, honestly described as a one-off snapshot you resend and tidy yourself.
+
+A "come back inside" alarm is set whenever a session **ends while the sun is still up**, and skipped when it runs to sunset, because from there UV only falls and there is nothing to come inside from. That matters for anyone taking two shorter sessions rather than staying out until dark.
 
 ## Going out off-plan
 
@@ -174,6 +209,8 @@ The reasoning is kept away from anything Android-specific, so it can be tested a
 | [`Advice.kt`](app/src/main/java/com/daylight/window/Advice.kt) | Turns a plan into plain English. |
 | [`LiveUv.kt`](app/src/main/java/com/daylight/window/LiveUv.kt) | Ground-station readings and the correction. |
 | [`Alerts.kt`](app/src/main/java/com/daylight/window/Alerts.kt) | Which alarms today needs, in fixed slots. |
+| [`AlarmService.kt`](app/src/main/java/com/daylight/window/AlarmService.kt) | Loops the ringtone until the alarm is dismissed. |
+| [`AlarmScreenActivity.kt`](app/src/main/java/com/daylight/window/AlarmScreenActivity.kt) | The screen that appears over the lock screen. |
 | [`Reminders.kt`](app/src/main/java/com/daylight/window/Reminders.kt) | Scheduling, notifications, re-arming after reboot. |
 | [`UvCurveView.kt`](app/src/main/java/com/daylight/window/UvCurveView.kt) | Draws the day with sessions shaded. |
 
@@ -181,7 +218,7 @@ Plain Android views rather than Compose, and no dependency injection — the app
 
 ## Tests
 
-38 tests, all pure arithmetic, no device needed.
+48 tests, all pure arithmetic, no device needed.
 
 The one that matters most checks that **no plan ever exceeds its budget**, across every combination of climate, skin type, risk profile and plan shape. If that ever fails, the app is telling someone to overexpose themselves.
 
