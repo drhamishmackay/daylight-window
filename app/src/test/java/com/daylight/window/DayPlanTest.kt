@@ -159,6 +159,77 @@ class DayPlanTest {
         }
     }
 
+    // Telling the app you went out must actually shorten the rest of the day. If it
+    // does not, an unplanned hour at lunchtime is silently added on top of a full
+    // plan and the day goes over the limit.
+    @Test
+    fun `sun already taken shortens the rest of the day`() {
+        val untouched = DayPlan.build(
+            melbourneSpring, 1, budget, DayPlan.Shape.TWO_SESSIONS, alreadySpent = 0.0
+        )
+        val afterAnHourOut = DayPlan.build(
+            melbourneSpring, 1, budget, DayPlan.Shape.TWO_SESSIONS, alreadySpent = 0.4
+        )
+
+        assertTrue(
+            "Having been out already should leave less planned time",
+            afterAnHourOut.totalMinutes < untouched.totalMinutes
+        )
+        assertTrue(
+            "Plan plus what was already taken must still fit the budget",
+            afterAnHourOut.totalDose <= budget + 1e-9
+        )
+    }
+
+    @Test
+    fun `using the whole allowance leaves no plan at all`() {
+        val plan = DayPlan.build(
+            melbourneSpring, 1, budget, DayPlan.Shape.TWO_SESSIONS, alreadySpent = budget
+        )
+        assertTrue("No sessions left", plan.sessions.isEmpty())
+        assertTrue("And the app knows why", plan.allowanceUsedUp)
+    }
+
+    @Test
+    fun `going over the limit does not create negative time`() {
+        val plan = DayPlan.build(
+            melbourneSpring, 1, budget, DayPlan.Shape.TWO_SESSIONS,
+            alreadySpent = budget * 3
+        )
+        assertTrue(plan.sessions.isEmpty())
+        assertEquals(0, plan.totalMinutes)
+    }
+
+    @Test
+    fun `negative spending is rejected rather than treated as credit`() {
+        try {
+            DayPlan.build(
+                melbourneSpring, 1, budget, DayPlan.Shape.TWO_SESSIONS, alreadySpent = -1.0
+            )
+            throw AssertionError("Should have refused negative spending")
+        } catch (expected: IllegalArgumentException) {
+            // Correct: it would otherwise read as extra allowance.
+        }
+    }
+
+    // A day gentle enough to be unrationed should stop being unrationed once enough
+    // has already been spent. Note how little sun that takes: eleven hours only fits
+    // under the occupational limit at about UV 0.05 — deep midwinter or heavy cloud.
+    @Test
+    fun `a gentle day stops being unlimited once the allowance is part used`() {
+        val dark = forecast(List(24) { 0.05 }, sunrise = 7 * 60, sunset = 18 * 60)
+        val fresh = DayPlan.build(dark, 1, budget, DayPlan.Shape.TWO_SESSIONS)
+        val partUsed = DayPlan.build(
+            dark, 1, budget, DayPlan.Shape.TWO_SESSIONS, alreadySpent = budget * 0.9
+        )
+        assertTrue("Fresh day is unrationed", fresh.wholeDayIsSafe)
+        assertTrue("Part-used day is rationed", !partUsed.wholeDayIsSafe)
+        assertTrue(
+            "And still fits the budget",
+            partUsed.totalDose <= budget + 1e-9
+        )
+    }
+
     // Alarms must never stack up. Four fixed slots, and re-planning reuses them.
     @Test
     fun `alerts reuse a fixed set of slots so they cannot accumulate`() {

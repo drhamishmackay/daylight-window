@@ -36,19 +36,27 @@ object DayPlan {
         /** True when the whole of daylight fits inside the budget. */
         val wholeDayIsSafe: Boolean,
         val sunriseMinute: Int,
-        val sunsetMinute: Int
+        val sunsetMinute: Int,
+        /** Sun already collected today outside the plan, in standard doses. */
+        val alreadySpent: Double = 0.0
     ) {
         val totalMinutes: Int get() = sessions.sumOf { it.lengthMinutes }
 
-        /** Share of the day's budget the plan uses, as a percentage. */
-        val budgetUsedPercent: Double get() = dose / budget * 100.0
+        /** Everything today costs: the plan plus anything already taken. */
+        val totalDose: Double get() = dose + alreadySpent
+
+        /** True when unplanned time outside has used up the whole allowance. */
+        val allowanceUsedUp: Boolean get() = sessions.isEmpty() && alreadySpent > 0
+
+        /** Share of the day's budget used in total, as a percentage. */
+        val budgetUsedPercent: Double get() = totalDose / budget * 100.0
 
         /**
          * Share of the dose that would just turn this skin pink. Well under 100 means
          * no burn; the budget keeps it far below that.
          */
         val reddeningPercent: Double
-            get() = dose / SunModel.reddeningDoseFor(skinType) * 100.0
+            get() = totalDose / SunModel.reddeningDoseFor(skinType) * 100.0
     }
 
     /**
@@ -58,19 +66,44 @@ object DayPlan {
      * one from the morning edge of daylight, one ending at the evening edge — so the
      * two together never exceed the day's ceiling.
      */
+    /**
+     * @param alreadySpent sun already collected today outside the plan, in standard
+     *   doses. Recorded when someone tells the app they went out. It is subtracted
+     *   from the day's allowance, so an unplanned hour at lunchtime shortens the
+     *   evening session rather than being quietly ignored.
+     */
     fun build(
         forecast: DayForecast,
         skinType: Int,
         budget: Double,
-        shape: Shape
+        shape: Shape,
+        alreadySpent: Double = 0.0
     ): Plan {
         require(budget > 0) { "Daily budget must be above zero, got $budget" }
+        require(alreadySpent >= 0) { "Sun already spent cannot be negative, got $alreadySpent" }
+
+        // What is left to allocate. Never negative: going over the limit means there
+        // is nothing left, not that the app owes you time indoors.
+        val remainingBudget = (budget - alreadySpent).coerceAtLeast(0.0)
+        if (remainingBudget == 0.0) {
+            return Plan(
+                sessions = emptyList(),
+                dose = 0.0,
+                budget = budget,
+                skinType = skinType,
+                wholeDayIsSafe = false,
+                sunriseMinute = forecast.sunriseMinute,
+                sunsetMinute = forecast.sunsetMinute,
+                alreadySpent = alreadySpent
+            )
+        }
+
         val samples = SunModel.interpolate(forecast.hourlyUv)
         val sunrise = forecast.sunriseMinute
         val sunset = forecast.sunsetMinute
 
         val wholeDayDose = doseBetween(samples, sunrise, sunset)
-        if (wholeDayDose <= budget) {
+        if (wholeDayDose <= remainingBudget) {
             // Nothing to ration: the entire day is within the ceiling.
             return Plan(
                 sessions = listOf(
@@ -81,14 +114,16 @@ object DayPlan {
                 skinType = skinType,
                 wholeDayIsSafe = true,
                 sunriseMinute = sunrise,
-                sunsetMinute = sunset
+                sunsetMinute = sunset,
+                alreadySpent = alreadySpent
             )
         }
 
         val sessions = when (shape) {
-            Shape.ONE_SESSION -> listOfNotNull(morningSession(samples, sunrise, sunset, budget))
+            Shape.ONE_SESSION ->
+                listOfNotNull(morningSession(samples, sunrise, sunset, remainingBudget))
             Shape.TWO_SESSIONS -> {
-                val half = budget / 2.0
+                val half = remainingBudget / 2.0
                 listOfNotNull(
                     morningSession(samples, sunrise, sunset, half),
                     eveningSession(samples, sunrise, sunset, half)
@@ -103,7 +138,8 @@ object DayPlan {
             skinType = skinType,
             wholeDayIsSafe = false,
             sunriseMinute = sunrise,
-            sunsetMinute = sunset
+            sunsetMinute = sunset,
+            alreadySpent = alreadySpent
         )
     }
 

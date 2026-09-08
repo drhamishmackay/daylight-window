@@ -90,6 +90,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SourcesActivity::class.java))
         }
         tripButton.setOnClickListener { toggleTrip() }
+        findViewById<Button>(R.id.test_alert).setOnClickListener { testAlert() }
 
         requestLocation()
     }
@@ -264,7 +265,8 @@ class MainActivity : AppCompatActivity() {
             forecast = day,
             skinType = settings.skinType,
             budget = settings.riskProfile.dailyDose,
-            shape = settings.planShape
+            shape = settings.planShape,
+            alreadySpent = settings.doseUsedToday
         )
         val advice = Advice.describe(
             plan = plan,
@@ -399,14 +401,16 @@ class MainActivity : AppCompatActivity() {
 
         if (started == null) {
             tripButton.text = getString(R.string.trip_start)
-            val remaining = plan.budget - settings.doseUsedToday
+            // The plan already has today's spending subtracted, so take what is left
+            // of the plan rather than subtracting it a second time.
+            val remaining = plan.budget - plan.totalDose
             val couldStay = DayPlan.minutesRemainingFrom(day, nowMinute, remaining)
             val uvNow = SunModel.uvAt(SunModel.interpolate(day.hourlyUv), nowMinute)
             tripStatus.text = Advice.unplannedTripAdvice(couldStay, uvNow)
         } else {
             val elapsed = nowMinute - started
             tripButton.text = getString(R.string.trip_stop)
-            val remaining = plan.budget - settings.doseUsedToday -
+            val remaining = plan.budget - plan.totalDose -
                 DayPlan.doseBetween(SunModel.interpolate(day.hourlyUv), started, nowMinute)
             val left = DayPlan.minutesRemainingFrom(day, nowMinute, remaining)
             tripStatus.text = getString(
@@ -415,6 +419,19 @@ class MainActivity : AppCompatActivity() {
                 Format.duration(left)
             )
         }
+    }
+
+    /**
+     * Fires a sample alert immediately, so the alarm can be checked without waiting
+     * for the moment it matters. Without this there is no way to find out the alarm
+     * is silent until the day it needed to ring.
+     */
+    private fun testAlert() {
+        if (settings.alertStyle == AlertStyle.IN_APP_ONLY) {
+            tripStatus.text = getString(R.string.test_alert_off)
+            return
+        }
+        Reminders.fire(this, AlertKind.GO_OUT, getString(R.string.test_alert_body))
     }
 
     private fun toggleTrip() {

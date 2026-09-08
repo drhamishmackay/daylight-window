@@ -42,6 +42,9 @@ object Advice {
         val withinGuideline = plan.dose <= RiskProfile.OCCUPATIONAL_LIMIT.dailyDose
 
         return when {
+            plan.allowanceUsedUp ->
+                "You have already had today's allowance. Tomorrow starts fresh."
+
             plan.totalMinutes == 0 ->
                 "There is no time outside today that would keep you under this limit."
 
@@ -70,6 +73,20 @@ object Advice {
         forecast: DayForecast
     ): Now {
         val safety = safetyOf(plan, profile)
+
+        // Unplanned time outside has used the whole allowance, so there is no plan
+        // left to follow. Say so rather than showing an empty one.
+        if (plan.allowanceUsedUp) {
+            return Now(
+                state = State.SPENT,
+                headline = "You have had today's sun.",
+                detail = "The time you spent outside has used your allowance for the " +
+                    "day. Going out again adds to your lifetime total — worth knowing, " +
+                    "not worth worrying about once.",
+                safetyLine = safetyOf(plan, profile),
+                minutesRemaining = 0
+            )
+        }
 
         if (plan.wholeDayIsSafe) {
             val leftToday = maxOf(0, plan.sunsetMinute - maxOf(nowMinute, plan.sunriseMinute))

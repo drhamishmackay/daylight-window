@@ -79,4 +79,8 @@
     <string name="source_forecast_only">Forecast for your location. No measuring station near enough to check it against.</string>
     <string name="source_confirmed">Forecast, matching the live reading at the %1$s measuring station.</string>
     <string name="source_corrected">Adjusted to the live reading at the %1$s measuring station, which is showing %2$s right now.</string>
+
+    <string name="test_alert">Test the alarm now</string>
+    <string name="test_alert_body">This is what your alarm looks like. Real ones arrive when it is time to go out or come back in.</string>
+    <string name="test_alert_off">Alarms are switched off. Set "How to tell me" to Alarm or Notification first.</string>
 </resources>

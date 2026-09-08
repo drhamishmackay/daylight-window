@@ -105,7 +105,8 @@ object Reminders {
             forecast = forecast,
             skinType = settings.skinType,
             budget = settings.riskProfile.dailyDose,
-            shape = settings.planShape
+            shape = settings.planShape,
+            alreadySpent = settings.doseUsedToday
         )
         val slots = Alerts.slotsFor(plan)
         val alarms = context.getSystemService(AlarmManager::class.java)
