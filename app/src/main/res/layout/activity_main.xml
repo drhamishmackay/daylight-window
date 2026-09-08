@@ -315,12 +315,24 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp" />
 
+        <!-- What the chosen alert style actually does. Without this the word on the
+             picker is the only explanation, and "Alarm" reads as "an entry in my
+             clock app", which is not what it is. -->
+        <TextView
+            android:id="@+id/alert_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingMultiplier="1.45"
+            android:textColor="@color/ink_soft"
+            android:textSize="12.5sp" />
+
         <Button
             android:id="@+id/test_alert"
             style="?android:attr/borderlessButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="4dp"
             android:minHeight="0dp"
             android:minWidth="0dp"
             android:paddingStart="0dp"
@@ -331,6 +343,23 @@
             android:textAllCaps="false"
             android:textColor="@color/accent"
             android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/to_clock"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/to_clock"
+            android:textAllCaps="false" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingMultiplier="1.45"
+            android:text="@string/to_clock_note"
+            android:textColor="@color/ink_soft"
+            android:textSize="12.5sp" />
 
         <!-- Where the numbers come from -->
         <Button

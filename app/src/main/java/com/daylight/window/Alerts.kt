@@ -8,23 +8,29 @@ import android.provider.AlarmClock
  * How the app tells you it is time to go out or come back in.
  */
 enum class AlertStyle(val label: String, val explanation: String) {
-    /** A full-screen alarm that rings, owned and rescheduled by this app. */
+    /**
+     * A ringing, full-screen alert owned by this app. Deliberately not an entry in the
+     * phone's clock app: what a clock app does with the same alarm sent again the next
+     * day is up to that clock app, and some add a second one rather than replacing it.
+     * Keeping the alarm here is what guarantees it never piles up.
+     */
     ALARM(
-        "Alarm",
-        "Rings and takes over the screen, like a wake-up alarm. Moves itself each day " +
-            "as the sun shifts, so alarms never pile up."
+        "Ringing alert (from this app)",
+        "Rings and takes over the screen like a wake-up alarm, but it lives in this " +
+            "app rather than your clock app — that is what stops it piling up a new " +
+            "alarm every day. It will not appear in your list of alarms."
     ),
 
     /** A notification: quieter, easy to miss. */
     NOTIFICATION(
-        "Notification",
-        "A quiet notification when it is time. Easy to miss if your phone is away."
+        "Quiet notification",
+        "A silent notification when it is time. Easy to miss if your phone is away."
     ),
 
     /** Nothing: the plan is there when you open the app. */
     IN_APP_ONLY(
-        "None — I will check the app",
-        "No alarms and no notifications. Open the app when you want to know."
+        "Nothing — I will check the app",
+        "No alerts at all. Open the app when you want to know."
     );
 
     companion object {

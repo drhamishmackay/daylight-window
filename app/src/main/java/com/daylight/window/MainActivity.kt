@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var shapeSpinner: Spinner
     private lateinit var alertSpinner: Spinner
     private lateinit var profileNote: TextView
+    private lateinit var alertNote: TextView
 
     private var forecast: DayForecast? = null
 
@@ -81,6 +82,7 @@ class MainActivity : AppCompatActivity() {
         shapeSpinner = findViewById(R.id.shape)
         alertSpinner = findViewById(R.id.alerts)
         profileNote = findViewById(R.id.profile_note)
+        alertNote = findViewById(R.id.alert_note)
 
         paintCurve()
         setUpPickers()
@@ -91,6 +93,7 @@ class MainActivity : AppCompatActivity() {
         }
         tripButton.setOnClickListener { toggleTrip() }
         findViewById<Button>(R.id.test_alert).setOnClickListener { testAlert() }
+        findViewById<Button>(R.id.to_clock).setOnClickListener { sendToClockApp() }
 
         requestLocation()
     }
@@ -283,6 +286,7 @@ class MainActivity : AppCompatActivity() {
         safetyText.text = advice.safetyLine
 
         profileNote.text = settings.riskProfile.plainDescription
+        alertNote.text = settings.alertStyle.explanation
 
         renderPlan(plan, nowMinute)
         renderTotal(plan)
@@ -432,6 +436,38 @@ class MainActivity : AppCompatActivity() {
             return
         }
         Reminders.fire(this, AlertKind.GO_OUT, getString(R.string.test_alert_body))
+    }
+
+    /**
+     * Hands today's times to the phone's clock app as ordinary alarms.
+     *
+     * A one-off export, not the app's alert mechanism: a clock app decides for itself
+     * whether the same alarm sent again tomorrow replaces today's or sits beside it,
+     * and some would accumulate one per day. The app's own alert is the one that
+     * updates itself safely; this exists for people who want the times visible in
+     * their usual list of alarms.
+     */
+    private fun sendToClockApp() {
+        val day = forecast ?: return
+        val plan = DayPlan.build(
+            forecast = day,
+            skinType = settings.skinType,
+            budget = settings.riskProfile.dailyDose,
+            shape = settings.planShape,
+            alreadySpent = settings.doseUsedToday
+        )
+        val slots = Alerts.slotsFor(plan)
+
+        if (slots.isEmpty()) {
+            tripStatus.text = getString(R.string.to_clock_none)
+            return
+        }
+        if (!Alerts.clockAppAvailable(this)) {
+            tripStatus.text = getString(R.string.to_clock_missing)
+            return
+        }
+        Alerts.exportToClockApp(this, slots)
+        tripStatus.text = getString(R.string.to_clock_done)
     }
 
     private fun toggleTrip() {
