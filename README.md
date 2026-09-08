@@ -19,6 +19,24 @@ Reads the hour-by-hour UV forecast for wherever you are, corrects it against liv
 
 Then it sets alarms: go out, come back in, go out again. They shift each day as the sun moves.
 
+## How this differs from other UV apps
+
+There are several open-source UV projects, and they are mostly good at the same thing:
+telling you the current UV index and how long you could stand in it before burning.
+
+This one differs in two ways:
+
+**It plans a day, not a moment.** Knowing "you could last 45 minutes at this UV" does
+not tell you when to go out, because UV changes hourly. This app spends a whole day's
+allowance across the gentlest hours and tells you the times.
+
+**Every number is cited.** The daily limit is a published occupational standard; the
+skin-type thresholds are measured medians from a named study; the unit conversions are
+international definitions. They are listed in the app itself, with links, and in
+[`Evidence.kt`](app/src/main/java/com/daylight/window/Evidence.kt). The README also
+says where those numbers are weak — small samples, thresholds that overlap between
+skin types — because advice you cannot check is advice you should not trust.
+
 ## The design goal: maximum safe minutes
 
 Not maximum sun. Those pull in opposite directions — an hour at dawn and ten minutes at noon cost your skin the same. So the planner spends a fixed daily allowance on the **gentlest daylight available**, working inward from dawn and dusk.
