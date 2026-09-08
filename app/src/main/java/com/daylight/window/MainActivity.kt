@@ -508,7 +508,11 @@ class MainActivity : AppCompatActivity() {
      */
     private fun testAlert() {
         if (settings.alertStyle == AlertStyle.IN_APP_ONLY) {
-            tripStatus.text = getString(R.string.test_alert_off)
+            alertNote.text = getString(R.string.test_alert_off)
+            return
+        }
+        if (settings.alertStyle == AlertStyle.CLOCK_APP) {
+            alertNote.text = getString(R.string.test_alert_clock)
             return
         }
         Reminders.fire(this, AlertKind.GO_OUT, getString(R.string.test_alert_body))

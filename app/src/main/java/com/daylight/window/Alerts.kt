@@ -10,25 +10,31 @@ import java.util.Calendar
  */
 enum class AlertStyle(val label: String, val explanation: String) {
     /**
-     * Real alarms in the phone's own clock app. Set as repeating daily alarms with
-     * fixed labels, so each day's re-plan moves the existing entry rather than adding
-     * another.
+     * A real alarm, built the way Google's own Clock app builds one: a foreground
+     * service loops the ringtone on the alarm audio stream, a wake lock keeps it
+     * going, and a full-screen alert appears over the lock screen and over other apps
+     * until it is dismissed.
+     *
+     * Kept inside this app rather than written into the phone's clock app because an
+     * app can create alarms there but never delete or move them — the clock app's
+     * database is closed to other apps. Since these times shift a minute or two daily,
+     * that route would leave a new alarm behind every day with no way to clear it.
      */
-    CLOCK_APP(
-        "Alarms in my clock app",
-        "Sets real alarms in your phone's clock app, so they ring like any other alarm " +
-            "and you can see and edit them there. They move themselves each day as the " +
-            "sun shifts, rather than piling up."
+    ALARM(
+        "Alarm",
+        "Rings until you dismiss it and appears over your lock screen, like a wake-up " +
+            "alarm. It moves itself each day as the sun shifts."
     ),
 
     /**
-     * A ringing, full-screen alert owned by this app, for phones with no clock app that
-     * accepts alarms.
+     * Writes the times into the phone's clock app. One-off, because those alarms
+     * cannot be updated or removed afterwards by this app.
      */
-    ALARM(
-        "Ringing alert (from this app)",
-        "Rings and takes over the screen like a wake-up alarm, but lives in this app " +
-            "rather than your clock app, so it will not appear in your alarm list."
+    CLOCK_APP(
+        "Alarms in my clock app",
+        "Puts the times in your clock app so you can see them there. They cannot update " +
+            "themselves — an app can add alarms to your clock app but never change or " +
+            "remove them — so you would resend them each day and tidy up the old ones."
     ),
 
     /** A notification: quieter, easy to miss. */
@@ -44,7 +50,7 @@ enum class AlertStyle(val label: String, val explanation: String) {
     );
 
     companion object {
-        val DEFAULT = CLOCK_APP
+        val DEFAULT = ALARM
 
         fun fromName(name: String): AlertStyle =
             entries.firstOrNull { it.name == name }

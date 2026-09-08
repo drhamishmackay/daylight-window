@@ -31,6 +31,7 @@ object Reminders {
     private const val DAILY_REPLAN_HOUR = 4
 
     fun createChannels(context: Context) {
+        AlarmService.createChannel(context)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java)
 
@@ -134,9 +135,20 @@ object Reminders {
             val intent = slotIntent(context, slot.id, slot.kind, slot.message)
             val canBeExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
                 alarms.canScheduleExactAlarms()
+
             if (canBeExact) {
-                alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAt, intent)
+                // setAlarmClock is what an alarm clock app is meant to use: the system
+                // never shifts these, leaves low-power mode to deliver them, and shows
+                // the alarm icon in the status bar. Tapping that icon opens the app.
+                val show = PendingIntent.getActivity(
+                    context, slot.id,
+                    Intent(context, MainActivity::class.java),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
+                alarms.setAlarmClock(AlarmManager.AlarmClockInfo(fireAt, show), intent)
             } else {
+                // Exact alarms are not permitted. The alert still arrives, just when
+                // the system next wakes rather than to the minute.
                 alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAt, intent)
             }
         }
@@ -147,6 +159,13 @@ object Reminders {
         val settings = Settings(context)
         if (settings.alertStyle == AlertStyle.IN_APP_ONLY) return
         if (settings.alertStyle == AlertStyle.CLOCK_APP) return
+
+        // A ringing alert hands off to the service, which loops the sound until it is
+        // dealt with and puts the alarm screen over the lock screen.
+        if (settings.alertStyle == AlertStyle.ALARM) {
+            AlarmService.start(context, kind, message)
+            return
+        }
 
         val goingOut = kind == AlertKind.GO_OUT
         val channel = if (goingOut) CHANNEL_GO_OUT else CHANNEL_COME_IN

@@ -73,6 +73,11 @@
     <string name="alert_go_out_title">Time to go outside</string>
     <string name="alert_come_in_title">Time to head back in</string>
 
+    <string name="channel_ringing">Ringing alarms</string>
+    <string name="channel_ringing_description">The alarm that rings until you dismiss it.</string>
+    <string name="alarm_dismiss">Dismiss</string>
+    <string name="alarm_open_app">Open Daylight Window</string>
+
     <string name="footer_caveat">No amount of sun is completely free of risk — that is measured, not a disclaimer. The risk falls as the sun weakens but never reaches zero. This app finds the gentlest daylight of your day and keeps your total under a published safety limit. It is not medical advice.</string>
 
     <string-array name="skin_types">
@@ -90,11 +95,12 @@
 
     <string name="test_alert">Test this alert now</string>
     <string name="test_alert_body">This is what an alert looks like. Real ones arrive when it is time to go out or come back in.</string>
+    <string name="test_alert_clock">Your clock app holds these alarms — check them there.</string>
     <string name="test_alert_off">Alerts are switched off. Change \"How to tell me\" first.</string>
 
     <string name="to_clock">Send today\'s times now</string>
     <string name="open_clock">Open clock</string>
-    <string name="to_clock_note">Alarms repeat daily and carry fixed names, so each day\'s plan moves the same alarms rather than adding new ones. They are sent automatically when you open the app; this button sends them again if you want to be sure.</string>
+    <string name="to_clock_note">An app can add alarms to your clock app but can never change or remove them afterwards — that part is closed off by Android. So these are a snapshot of today: resend them tomorrow, and delete the old ones yourself. The Alarm option above avoids all of that.</string>
     <string name="to_clock_done">Done — %1$d alarms set in your clock app.</string>
     <string name="to_clock_refused">Your clock app refused the alarms. Open it and check whether this app is allowed to set alarms.</string>
     <string name="to_clock_none">There is nothing planned today to send.</string>

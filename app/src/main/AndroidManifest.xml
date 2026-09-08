@@ -12,6 +12,16 @@
     <!-- Required to write alarms into the phone's clock app. Without it every request
          is silently refused and nothing appears in the alarm list. -->
     <uses-permission android:name="com.android.alarm.permission.SET_ALARM" />
+    <!-- The alarm rings from a foreground service so the sound keeps looping until it
+         is dealt with; a notification's sound plays once and stops. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Brings the alarm screen up over the lock screen, as a wake-up alarm does. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Keeps the processor awake while ringing so the sound does not stop when the
+         screen sleeps. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- Android 11 and later hide other apps unless they are named here. Without this
          the check for "is there a clock app" always answers no, even on a Pixel. -->
@@ -43,6 +53,24 @@
             android:name=".SourcesActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />
+
+        <!-- The ringing screen. A separate task so it can appear over whatever else
+             is open, and excluded from recents so a dismissed alarm leaves nothing
+             behind. -->
+        <activity
+            android:name=".AlarmScreenActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:showOnLockScreen="true"
+            android:showWhenLocked="true"
+            android:taskAffinity=".alarm"
+            android:turnScreenOn="true" />
+
+        <service
+            android:name=".AlarmService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <receiver
             android:name=".AlarmReceiver"
