@@ -1,0 +1,424 @@
+<title>Daylight Window</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter+Tight:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#F7F4EE; --raised:#FFFFFF; --ink:#1C1F26; --ink-soft:#5E6470;
+  --rule:#E2DDD3; --accent:#3D5A80;
+  --uv-none:#4A8F6B; --uv-low:#C9A227; --uv-real:#C4562E;
+  --band:#4A8F6B; --tint:transparent;
+  --shadow:0 1px 2px rgba(28,31,38,.06),0 8px 24px -12px rgba(28,31,38,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#141821; --raised:#1C222E; --ink:#EDEAE4; --ink-soft:#98A0AE;
+    --rule:#2B3341; --accent:#8AA9CE;
+    --uv-none:#6FBF93; --uv-low:#E3BE49; --uv-real:#E58057; --band:#6FBF93;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#141821; --raised:#1C222E; --ink:#EDEAE4; --ink-soft:#98A0AE;
+  --rule:#2B3341; --accent:#8AA9CE;
+  --uv-none:#6FBF93; --uv-low:#E3BE49; --uv-real:#E58057; --band:#6FBF93;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Inter Tight",system-ui,-apple-system,sans-serif;
+  font-size:15px; line-height:1.5;
+  background-image:radial-gradient(120% 55% at 50% 0%,var(--tint),transparent 70%);
+  transition:background-image .6s ease;
+}
+.wrap{max-width:660px;margin:0 auto;padding:26px 20px 56px;display:flex;flex-direction:column;gap:24px}
+
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.brand{font-family:Fraunces,Georgia,serif;font-size:17px;font-weight:600;letter-spacing:-.01em}
+.place{font-size:13px;color:var(--ink-soft);text-align:right;line-height:1.4}
+.place button{background:none;border:none;padding:0;font:inherit;font-size:12.5px;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+.verdict{display:flex;flex-direction:column;gap:13px}
+.status{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--band)}
+.status .dot{width:9px;height:9px;border-radius:50%;background:var(--band);flex:none}
+.headline{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(27px,6.6vw,38px);line-height:1.13;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.sub{margin:0;color:var(--ink-soft);max-width:54ch}
+.sub strong{color:var(--ink);font-weight:600}
+
+.card{background:var(--raised);border:1px solid var(--rule);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.card-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:14px 16px 0}
+.card-head h2{margin:0;font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft)}
+.peak{font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.chart{display:block;width:100%;height:auto;padding:4px 4px 0}
+
+.windows{display:flex;flex-direction:column}
+.win{display:flex;align-items:center;gap:13px;padding:12px 16px;border-top:1px solid var(--rule)}
+.win .rail{width:3px;align-self:stretch;border-radius:2px;background:var(--band);flex:none}
+.win .time{font-variant-numeric:tabular-nums;font-weight:600;font-size:15px;white-space:nowrap}
+.win .note{font-size:13px;color:var(--ink-soft);flex:1}
+.win .cost{font-size:13px;font-variant-numeric:tabular-nums;font-weight:600;color:var(--band);white-space:nowrap}
+
+.budget{padding:14px 16px 16px;border-top:1px solid var(--rule);display:flex;flex-direction:column;gap:9px}
+.budget .lab{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--ink-soft)}
+.budget .lab b{color:var(--ink);font-variant-numeric:tabular-nums;font-size:14px}
+.bar{height:7px;border-radius:4px;background:var(--rule);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--band);border-radius:4px;transition:width .4s ease}
+.budget .hint{font-size:12.5px;color:var(--ink-soft);margin:0}
+
+.controls{display:flex;flex-direction:column;gap:11px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+label{font-size:13px;color:var(--ink-soft)}
+select,.btn{font:inherit;font-size:13.5px;color:var(--ink);background:var(--raised);border:1px solid var(--rule);border-radius:9px;padding:8px 11px;cursor:pointer;max-width:62%}
+.btn{font-weight:500}
+.btn:hover,select:hover{border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.foot{font-size:12.5px;line-height:1.6;color:var(--ink-soft);border-top:1px solid var(--rule);padding-top:16px}
+.foot p{margin:0 0 8px}
+.foot p:last-child{margin:0}
+.foot strong{color:var(--ink)}
+.err{color:var(--uv-real)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">Daylight Window</div>
+    <div class="place">
+      <div id="place">Locating…</div>
+      <button id="relocate" type="button">Use my location</button>
+    </div>
+  </header>
+
+  <section class="verdict">
+    <div class="status"><span class="dot"></span><span id="status-text">Loading</span></div>
+    <h1 class="headline" id="headline">Checking today's sky…</h1>
+    <p class="sub" id="sub">Fetching the hour-by-hour forecast for where you are.</p>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Today</h2>
+      <div class="peak" id="peak"></div>
+    </div>
+    <svg class="chart" id="chart" viewBox="0 0 660 210" role="img" aria-label="UV index through the day with gentle windows marked"></svg>
+    <div class="windows" id="windows"></div>
+    <div class="budget">
+      <div class="lab"><span>Time outside if you take every window</span><b id="totalpct">—</b></div>
+      <div class="bar"><span id="barfill" style="width:0%"></span></div>
+      <p class="hint" id="budgethint"></p>
+    </div>
+  </section>
+
+  <section class="controls">
+    <div class="row">
+      <label for="skin">Skin type</label>
+      <select id="skin">
+        <option value="1" selected>I — always burns, never tans</option>
+        <option value="2">II — burns easily, tans a little</option>
+        <option value="3">III — sometimes burns, tans gradually</option>
+        <option value="4">IV — rarely burns, tans easily</option>
+        <option value="5">V — very rarely burns</option>
+        <option value="6">VI — never burns</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="cap">Never go out above</label>
+      <select id="cap">
+        <option value="1" selected>UV 1 — gentlest, most hours per unit of damage</option>
+        <option value="2">UV 2 — more daylight, more exposure</option>
+        <option value="3">UV 3 — public-health line for average skin</option>
+        <option value="5">UV 5 — permissive</option>
+        <option value="99">No limit — show me everything</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="notify">Remind me when a window opens</label>
+      <button class="btn" id="notify" type="button">Turn on</button>
+    </div>
+  </section>
+
+  <div class="foot">
+    <p><strong>The number that matters.</strong> Each window shows how long you could stay before your skin would just start to pink, and the bar shows how much of that allowance the day&rsquo;s windows use up. Staying well inside it means no burn, and the ultraviolet you do collect is the small, slow kind — which is what adds up over decades into ageing. The aim is the most hours outside for the least of that bar.</p>
+    <p><strong>How windows are picked.</strong> The app reads the hourly forecast for your exact spot, cloud cover already included, and marks every stretch of daylight sitting at or under your hard limit.</p>
+    <p><strong>Honest caveat.</strong> No amount of ultraviolet is completely free of risk — the risk falls smoothly as UV falls but never reaches zero. This finds the gentlest daylight of your day. It is not medical advice, and it assumes sunscreen stays on your face regardless.</p>
+    <p>Forecast data from Open-Meteo.</p>
+  </div>
+</div>
+
+<script>
+// Minimal dose that just visibly reddens skin, in the standard unit used by UV
+// agencies (standard erythema doses). Type I reddens at the lowest dose; each
+// subsequent type tolerates progressively more before showing colour.
+var MED_BY_SKIN = {1:2.0, 2:2.5, 3:3.0, 4:4.5, 5:6.0, 6:10.0};
+var MIN_WINDOW_MIN = 20;   // shorter than this is not worth going outside for
+var STEP_MIN = 10;         // resolution the hourly curve is interpolated to
+// UV index 1 equals 25 milliwatts per square metre of erythemal irradiance;
+// one standard erythema dose is 100 joules per square metre.
+var SED_PER_UV_PER_MIN = 25 * 60 / 100 / 1000;
+
+var state = {data:null};
+
+function med(){ return MED_BY_SKIN[+document.getElementById('skin').value]; }
+function hardCap(){ return +document.getElementById('cap').value; }
+
+function band(uv){
+  if (uv < 1) return {color:'var(--uv-none)', word:'negligible'};
+  if (uv < 3) return {color:'var(--uv-low)', word:'low'};
+  return {color:'var(--uv-real)', word:'meaningful'};
+}
+
+function fmt(mins){
+  var h = Math.floor(mins/60), m = Math.round(mins%60);
+  var ap = h >= 12 && h < 24 ? 'pm' : 'am';
+  var hh = h % 12; if (hh === 0) hh = 12;
+  return hh + (m ? ':' + String(m).padStart(2,'0') : '') + ap;
+}
+
+function dur(mins){
+  var h = Math.floor(mins/60), m = Math.round(mins%60);
+  if (h && m) return h + 'h ' + m + 'm';
+  if (h) return h + (h === 1 ? ' hour' : ' hours');
+  return m + ' min';
+}
+
+function pct(n){ return n < 1 ? n.toFixed(1) + '%' : Math.round(n) + '%'; }
+
+// How long you could stand in a given UV before your skin would just start to
+// pink. Returns minutes; Infinity when UV is effectively nil.
+function safeMinutes(uv){
+  if (uv <= 0.05) return Infinity;
+  return med() / (uv * SED_PER_UV_PER_MIN);
+}
+
+function series(d){
+  var today = d.hourly.time[0].slice(0,10);
+  var hrs = [];
+  for (var i = 0; i < d.hourly.time.length; i++){
+    if (d.hourly.time[i].slice(0,10) !== today) break;
+    hrs.push(d.hourly.uv_index[i]);
+  }
+  var out = [];
+  for (var t = 0; t <= 24*60; t += STEP_MIN){
+    var a = Math.floor(t/60);
+    if (a >= hrs.length) break;
+    var b = Math.min(a+1, hrs.length-1);
+    var f = (t - a*60)/60;
+    out.push({min:t, uv: hrs[a] + (hrs[b] - hrs[a]) * f});
+  }
+  return out;
+}
+
+function toMin(iso){ return +iso.slice(11,13)*60 + +iso.slice(14,16); }
+
+// Share of a just-visible-pink dose accumulated between two times.
+function costPct(pts, from, to){
+  var sed = 0;
+  for (var i = 0; i < pts.length; i++){
+    if (pts[i].min >= from && pts[i].min < to) sed += pts[i].uv * SED_PER_UV_PER_MIN * STEP_MIN;
+  }
+  return sed / med() * 100;
+}
+
+function findWindows(pts, sunrise, sunset, cap){
+  var wins = [], cur = null;
+  for (var i = 0; i < pts.length; i++){
+    var p = pts[i];
+    var ok = p.min >= sunrise && p.min <= sunset && p.uv <= cap;
+    if (ok && !cur) cur = {start:p.min, peak:p.uv};
+    else if (ok) cur.peak = Math.max(cur.peak, p.uv);
+    else if (cur){ cur.end = p.min; wins.push(cur); cur = null; }
+  }
+  if (cur){ cur.end = Math.min(sunset, pts[pts.length-1].min); wins.push(cur); }
+  return wins.filter(function(w){ return w.end - w.start >= MIN_WINDOW_MIN; });
+}
+
+// The share of a pink-threshold dose a window uses, shown as plain headroom.
+function headroom(pts, w){
+  var used = costPct(pts, w.start, w.end);
+  if (used < 100) return 'safe';
+  return 'cap ' + dur(Math.round(safeMinutes(w.peak)));
+}
+
+function drawChart(pts, sunrise, sunset, wins, cap){
+  var W = 660, H = 210, L = 32, R = 14, T = 18, B = 26;
+  var top = Math.max.apply(null, pts.map(function(p){ return p.uv; }));
+  var maxUv = Math.max(3, Math.ceil(top + 0.5));
+  var x = function(m){ return L + (m/(24*60)) * (W-L-R); };
+  var y = function(u){ return T + (1 - u/maxUv) * (H-T-B); };
+  var s = [];
+
+  s.push('<rect x="'+L+'" y="'+T+'" width="'+(x(sunrise)-L).toFixed(1)+'" height="'+(H-T-B)+'" fill="var(--rule)" opacity=".4"/>');
+  s.push('<rect x="'+x(sunset).toFixed(1)+'" y="'+T+'" width="'+(W-R-x(sunset)).toFixed(1)+'" height="'+(H-T-B)+'" fill="var(--rule)" opacity=".4"/>');
+
+  wins.forEach(function(w){
+    s.push('<rect x="'+x(w.start).toFixed(1)+'" y="'+T+'" width="'+(x(w.end)-x(w.start)).toFixed(1)+'" height="'+(H-T-B)+'" fill="var(--uv-none)" opacity=".18"/>');
+  });
+
+  var stepU = maxUv > 8 ? 4 : 2;
+  for (var u = 0; u <= maxUv; u += stepU){
+    s.push('<line x1="'+L+'" y1="'+y(u).toFixed(1)+'" x2="'+(W-R)+'" y2="'+y(u).toFixed(1)+'" stroke="var(--rule)" stroke-width="1"/>');
+    s.push('<text x="'+(L-7)+'" y="'+(y(u)+3.5).toFixed(1)+'" text-anchor="end" font-size="10" fill="var(--ink-soft)" font-family="Inter Tight,sans-serif">'+u+'</text>');
+  }
+  [6,9,12,15,18,21].forEach(function(h){
+    s.push('<text x="'+x(h*60).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="10" fill="var(--ink-soft)" font-family="Inter Tight,sans-serif">'+fmt(h*60)+'</text>');
+  });
+
+  if (cap <= maxUv){
+    s.push('<line x1="'+L+'" y1="'+y(cap).toFixed(1)+'" x2="'+(W-R)+'" y2="'+y(cap).toFixed(1)+'" stroke="var(--uv-real)" stroke-width="1" stroke-dasharray="4 4" opacity=".75"/>');
+    s.push('<text x="'+(W-R)+'" y="'+(y(cap)-5).toFixed(1)+'" text-anchor="end" font-size="10" fill="var(--uv-real)" font-family="Inter Tight,sans-serif">your limit</text>');
+  }
+
+  var d = pts.map(function(p,i){ return (i?'L':'M') + x(p.min).toFixed(1) + ' ' + y(p.uv).toFixed(1); }).join(' ');
+  s.push('<path d="'+d+' L '+x(pts[pts.length-1].min).toFixed(1)+' '+y(0).toFixed(1)+' L '+x(0).toFixed(1)+' '+y(0).toFixed(1)+' Z" fill="var(--accent)" opacity=".1"/>');
+  s.push('<path d="'+d+'" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>');
+
+  var n = new Date(), nm = n.getHours()*60 + n.getMinutes();
+  s.push('<line x1="'+x(nm).toFixed(1)+'" y1="'+T+'" x2="'+x(nm).toFixed(1)+'" y2="'+(H-B)+'" stroke="var(--ink)" stroke-width="1.5"/>');
+  s.push('<text x="'+x(nm).toFixed(1)+'" y="'+(T-5)+'" text-anchor="middle" font-size="10" font-weight="600" fill="var(--ink)" font-family="Inter Tight,sans-serif">now</text>');
+
+  document.getElementById('chart').innerHTML = s.join('');
+}
+
+function render(){
+  var d = state.data; if (!d) return;
+  var pts = series(d);
+  var sunrise = toMin(d.daily.sunrise[0]), sunset = toMin(d.daily.sunset[0]);
+  var cap = hardCap();
+  var wins = findWindows(pts, sunrise, sunset, cap);
+  var peak = Math.max.apply(null, pts.map(function(p){ return p.uv; }));
+
+  var now = new Date(), nm = now.getHours()*60 + now.getMinutes();
+  var open = wins.filter(function(w){ return nm >= w.start && nm <= w.end; })[0];
+  var next = wins.filter(function(w){ return w.start > nm; })[0];
+  var uvNow = pts.reduce(function(a,p){ return Math.abs(p.min-nm) < Math.abs(a.min-nm) ? p : a; }, pts[0]).uv;
+  var b = band(uvNow);
+
+  document.documentElement.style.setProperty('--band', open ? b.color : 'var(--uv-real)');
+  document.body.style.setProperty('--tint', open ? 'rgba(74,143,107,.14)' : 'rgba(196,86,46,.08)');
+
+  var hd = document.getElementById('headline'), sb = document.getElementById('sub');
+  var st = document.getElementById('status-text');
+
+  if (open){
+    var left = open.end - nm;
+    var burn = safeMinutes(open.peak);
+    st.textContent = 'Window open';
+    hd.textContent = left > 90 ? 'Go outside. No rush.' : 'Go outside now.';
+    sb.innerHTML = 'UV is <strong>' + uvNow.toFixed(1) + '</strong>. The window runs <strong>' +
+      dur(left) + '</strong> more, until ' + fmt(open.end) + '. ' +
+      (burn === Infinity
+        ? 'At this level you could stay out all of it without pinking.'
+        : 'At this level your skin would take about <strong>' + dur(Math.round(burn)) +
+          '</strong> to start pinking, so stay inside that.');
+  } else if (next){
+    st.textContent = 'Opens ' + fmt(next.start);
+    hd.textContent = 'Wait until ' + fmt(next.start) + '.';
+    sb.innerHTML = 'UV is <strong>' + uvNow.toFixed(1) + '</strong>, over your limit of ' + cap +
+      '. It settles back at <strong>' + fmt(next.start) + '</strong> and stays gentle for <strong>' +
+      dur(next.end - next.start) + '</strong>.';
+  } else if (wins.length){
+    st.textContent = 'Done for today';
+    hd.textContent = 'That was today’s daylight.';
+    sb.innerHTML = 'The last gentle window closed at <strong>' + fmt(wins[wins.length-1].end) +
+      '</strong>. Tomorrow’s plan is here in the morning.';
+  } else {
+    st.textContent = 'Nothing under your limit';
+    hd.textContent = 'No gentle window today.';
+    sb.innerHTML = 'UV stays over ' + cap + ' for all of daylight, peaking at <strong>' + peak.toFixed(1) +
+      '</strong>. Going out means covering up.';
+  }
+
+  document.getElementById('peak').textContent = 'peak ' + peak.toFixed(1) + ' · limit ' + (cap > 90 ? 'none' : cap);
+
+  document.getElementById('windows').innerHTML = wins.length
+    ? wins.map(function(w){
+        var wb = band(w.peak);
+        var live = nm >= w.start && nm <= w.end, past = nm > w.end;
+        return '<div class="win" style="--band:' + wb.color + (past ? ';opacity:.45' : '') + '">' +
+          '<span class="rail"></span>' +
+          '<span class="time">' + fmt(w.start) + ' – ' + fmt(w.end) + '</span>' +
+          '<span class="note">' + dur(w.end - w.start) + ' · UV to ' + w.peak.toFixed(1) +
+          (live ? ' · open now' : past ? ' · passed' : '') + '</span>' +
+          '<span class="cost">' + headroom(pts, w) + '</span>' +
+        '</div>';
+      }).join('')
+    : '<div class="win" style="--band:var(--uv-real)"><span class="rail"></span>' +
+      '<span class="note">No stretch of daylight stays under UV ' + cap + ' today.</span></div>';
+
+  var total = wins.reduce(function(a,w){ return a + costPct(pts, w.start, w.end); }, 0);
+  var mins = wins.reduce(function(a,w){ return a + (w.end - w.start); }, 0);
+  document.getElementById('totalpct').textContent = mins ? dur(mins) : 'none';
+  document.getElementById('barfill').style.width = Math.min(100, total) + '%';
+  document.getElementById('budgethint').textContent = mins
+    ? (total < 100
+        ? 'That uses ' + pct(total) + ' of what it would take to pink your skin — no burn, and only a small amount of the slow kind of exposure.'
+        : 'Taking all of it would pass your pink threshold. Break it up, or take the gentlest window only.')
+    : 'No gentle daylight today.';
+
+  drawChart(pts, sunrise, sunset, wins, cap);
+  scheduleReminder(wins, nm);
+}
+
+var timer = null;
+function scheduleReminder(wins, nm){
+  if (timer) clearTimeout(timer);
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  var next = wins.filter(function(w){ return w.start > nm; })[0];
+  if (!next) return;
+  var ms = (next.start - nm) * 60000;
+  if (ms > 0 && ms < 86400000){
+    timer = setTimeout(function(){
+      new Notification('Your daylight window is open', {
+        body: 'Gentle until ' + fmt(next.end) + '. Good time to step outside.'
+      });
+      render();
+    }, ms);
+  }
+}
+
+function load(lat, lon, label){
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
+    '&hourly=uv_index&daily=sunrise,sunset&timezone=auto&forecast_days=1';
+  fetch(url).then(function(r){
+    if (!r.ok) throw new Error('The forecast service returned ' + r.status + '.');
+    return r.json();
+  }).then(function(d){
+    state.data = d;
+    document.getElementById('place').textContent = label || d.timezone.split('/').pop().replace(/_/g,' ');
+    render();
+  }).catch(function(){
+    document.getElementById('status-text').textContent = 'Blocked';
+    document.getElementById('headline').textContent = 'The forecast is being blocked.';
+    document.getElementById('sub').innerHTML = '<span class="err">This page cannot reach the weather service from where it is hosted. ' +
+      'Save this file to your phone and open it directly &mdash; it works normally from a downloaded file.</span>';
+  });
+}
+
+function locate(){
+  document.getElementById('place').textContent = 'Locating…';
+  if (!navigator.geolocation){ load(-37.81, 144.96, 'Melbourne'); return; }
+  navigator.geolocation.getCurrentPosition(
+    function(p){ load(p.coords.latitude.toFixed(3), p.coords.longitude.toFixed(3), null); },
+    function(){ load(-37.81, 144.96, 'Melbourne (default)'); },
+    {timeout:8000, maximumAge:600000}
+  );
+}
+
+document.getElementById('relocate').addEventListener('click', locate);
+document.getElementById('skin').addEventListener('change', render);
+document.getElementById('cap').addEventListener('change', render);
+document.getElementById('notify').addEventListener('click', function(){
+  var btn = this;
+  if (!('Notification' in window)){ btn.textContent = 'Not supported'; return; }
+  Notification.requestPermission().then(function(p){
+    btn.textContent = p === 'granted' ? 'On' : 'Blocked';
+    if (p === 'granted') render();
+  });
+});
+if ('Notification' in window && Notification.permission === 'granted'){
+  document.getElementById('notify').textContent = 'On';
+}
+
+setInterval(render, 60000);
+locate();
+</script>

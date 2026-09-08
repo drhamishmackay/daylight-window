@@ -1,0 +1,17 @@
+# Build output
+build/
+app/build/
+.gradle/
+*.apk
+*.aab
+
+# Local machine paths and signing material — never committed
+local.properties
+*.jks
+*.keystore
+keystore.properties
+
+# IDE
+.idea/
+*.iml
+.DS_Store

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Daylight Window</string>
+
+    <string name="locating">Locating…</string>
+    <string name="place_unknown">Location unknown</string>
+    <string name="use_my_location">Use my location</string>
+
+    <string name="status_loading">Loading</string>
+    <string name="headline_loading">Checking today\'s sky…</string>
+    <string name="detail_loading">Fetching the hour-by-hour forecast for where you are.</string>
+
+    <string name="status_offline">Offline</string>
+    <string name="headline_offline">Could not reach the forecast.</string>
+    <string name="detail_offline">Check your connection and pull to try again.</string>
+
+    <string name="status_no_location">No location yet</string>
+    <string name="headline_no_location">Where are you?</string>
+    <string name="detail_no_location">Allow location access so the app can read the UV forecast for your exact spot. Nothing leaves your phone except the coordinates sent to the weather service.</string>
+
+    <string name="today">Today</string>
+    <string name="peak_and_limit">peak %1$s · limit %2$s</string>
+    <string name="limit_none">none</string>
+    <string name="chart_your_limit">your limit</string>
+    <string name="chart_now">now</string>
+
+    <string name="window_range">%1$s – %2$s</string>
+    <string name="window_note">%1$s · UV to %2$s%3$s</string>
+    <string name="window_open_now"> · open now</string>
+    <string name="window_passed"> · passed</string>
+    <string name="window_safe">safe</string>
+    <string name="window_cap">cap %1$s</string>
+    <string name="no_windows_row">No stretch of daylight stays under UV %1$d today.</string>
+
+    <string name="summary_label">Time outside if you take every window</string>
+    <string name="summary_none">none</string>
+    <string name="summary_hint_none">No gentle daylight today.</string>
+    <string name="summary_hint_ok">That uses %1$s of what it would take to pink your skin — no burn, and only a small amount of the slow kind of exposure.</string>
+    <string name="summary_hint_over">Taking all of it would pass your pink threshold. Break it up, or take the gentlest window only.</string>
+
+    <string name="label_skin">Skin type</string>
+    <string name="label_limit">Never go out above</string>
+    <string name="label_remind">Remind me when a window opens</string>
+    <string name="reminders_on">On</string>
+    <string name="reminders_off">Turn on</string>
+
+    <string name="channel_name">Daylight windows</string>
+    <string name="channel_description">Tells you when a gentle stretch of daylight opens.</string>
+    <string name="notify_title">Your daylight window is open</string>
+    <string name="notify_body_negligible">Gentle until %1$s. UV is low enough to stay out the whole window.</string>
+    <string name="notify_body_limited">Gentle until %1$s. Your skin would take about %2$s to start pinking.</string>
+
+    <string name="footer_number">The number that matters. Each window shows how long you could stay before your skin would just start to pink, and the bar shows how much of that allowance the day\'s windows use up. Staying well inside it means no burn, and the ultraviolet you do collect is the small, slow kind — which is what adds up over decades into ageing.</string>
+    <string name="footer_how">How windows are picked. The app reads the hourly forecast for your exact spot, cloud cover already included, and marks every stretch of daylight sitting at or under your limit.</string>
+    <string name="footer_caveat">Honest caveat. No amount of ultraviolet is completely free of risk — the risk falls smoothly as UV falls but never reaches zero. This finds the gentlest daylight of your day. It is not medical advice.</string>
+    <string name="footer_source">Forecast data from Open-Meteo.</string>
+
+    <string-array name="skin_types">
+        <item>I — always burns, never tans</item>
+        <item>II — burns easily, tans a little</item>
+        <item>III — sometimes burns, tans gradually</item>
+        <item>IV — rarely burns, tans easily</item>
+        <item>V — very rarely burns</item>
+        <item>VI — never burns</item>
+    </string-array>
+
+    <string-array name="uv_limits">
+        <item>UV 1 — gentlest, most hours per unit of damage</item>
+        <item>UV 2 — more daylight, more exposure</item>
+        <item>UV 3 — public-health line for average skin</item>
+        <item>UV 5 — permissive</item>
+        <item>No limit — show me everything</item>
+    </string-array>
+</resources>

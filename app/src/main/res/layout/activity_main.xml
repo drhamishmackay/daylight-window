@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/paper"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="40dp">
+
+        <!-- Where you are -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="true">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/app_name"
+                android:textColor="@color/ink"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <TextView
+                    android:id="@+id/place"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/locating"
+                    android:textColor="@color/ink_soft"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/relocate"
+                    style="?android:attr/borderlessButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="0dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp"
+                    android:text="@string/use_my_location"
+                    android:textAllCaps="false"
+                    android:textColor="@color/accent"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- The verdict -->
+        <TextView
+            android:id="@+id/status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:letterSpacing="0.08"
+            android:text="@string/status_loading"
+            android:textAllCaps="true"
+            android:textColor="@color/uv_none"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/headline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:lineSpacingMultiplier="1.1"
+            android:text="@string/headline_loading"
+            android:textColor="@color/ink"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/detail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:lineSpacingMultiplier="1.35"
+            android:text="@string/detail_loading"
+            android:textColor="@color/ink_soft"
+            android:textSize="15sp" />
+
+        <!-- The day, drawn -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:background="@drawable/card"
+            android:orientation="vertical"
+            android:paddingBottom="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="true"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="14dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.09"
+                    android:text="@string/today"
+                    android:textAllCaps="true"
+                    android:textColor="@color/ink_soft"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/peak"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/ink_soft"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <com.daylight.window.UvCurveView
+                android:id="@+id/curve"
+                android:layout_width="match_parent"
+                android:layout_height="190dp"
+                android:layout_marginTop="6dp" />
+
+            <LinearLayout
+                android:id="@+id/windows"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <!-- What the whole day costs -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/divider_top"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:baselineAligned="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/summary_label"
+                        android:textColor="@color/ink_soft"
+                        android:textSize="12.5sp" />
+
+                    <TextView
+                        android:id="@+id/summary_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/ink"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/summary_bar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="7dp"
+                    android:layout_marginTop="9dp"
+                    android:max="100"
+                    android:progressTint="@color/uv_none"
+                    android:progressBackgroundTint="@color/rule" />
+
+                <TextView
+                    android:id="@+id/summary_hint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="9dp"
+                    android:lineSpacingMultiplier="1.3"
+                    android:textColor="@color/ink_soft"
+                    android:textSize="12.5sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Your settings -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/label_skin"
+            android:textColor="@color/ink_soft"
+            android:textSize="13sp" />
+
+        <Spinner
+            android:id="@+id/skin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/label_limit"
+            android:textColor="@color/ink_soft"
+            android:textSize="13sp" />
+
+        <Spinner
+            android:id="@+id/limit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_remind"
+                android:textColor="@color/ink_soft"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/remind"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/reminders_off"
+                android:textAllCaps="false" />
+        </LinearLayout>
+
+        <!-- How it decides -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="26dp"
+            android:background="@color/rule" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:lineSpacingMultiplier="1.5"
+            android:text="@string/footer_number"
+            android:textColor="@color/ink_soft"
+            android:textSize="12.5sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:lineSpacingMultiplier="1.5"
+            android:text="@string/footer_how"
+            android:textColor="@color/ink_soft"
+            android:textSize="12.5sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:lineSpacingMultiplier="1.5"
+            android:text="@string/footer_caveat"
+            android:textColor="@color/ink_soft"
+            android:textSize="12.5sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/footer_source"
+            android:textColor="@color/ink_soft"
+            android:textSize="12.5sp" />
+    </LinearLayout>
+</ScrollView>

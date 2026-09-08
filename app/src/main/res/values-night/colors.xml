@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="paper">#FF141821</color>
+    <color name="raised">#FF1C222E</color>
+    <color name="ink">#FFEDEAE4</color>
+    <color name="ink_soft">#FF98A0AE</color>
+    <color name="rule">#FF2B3341</color>
+    <color name="night">#FF10141C</color>
+    <color name="accent">#FF8AA9CE</color>
+    <color name="uv_none">#FF6FBF93</color>
+    <color name="uv_low">#FFE3BE49</color>
+    <color name="uv_real">#FFE58057</color>
+</resources>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Warm paper ground; a plain grey would read as unconsidered. -->
+    <color name="paper">#FFF7F4EE</color>
+    <color name="raised">#FFFFFFFF</color>
+    <color name="ink">#FF1C1F26</color>
+    <color name="ink_soft">#FF5E6470</color>
+    <color name="rule">#FFE2DDD3</color>
+    <color name="night">#FFE9E4DA</color>
+    <!-- Muted slate blue for the app's own furniture, kept clear of the UV scale. -->
+    <color name="accent">#FF3D5A80</color>
+    <!-- The UV scale carries all the meaning, so it holds the only strong colour. -->
+    <color name="uv_none">#FF4A8F6B</color>
+    <color name="uv_low">#FFC9A227</color>
+    <color name="uv_real">#FFC4562E</color>
+</resources>
