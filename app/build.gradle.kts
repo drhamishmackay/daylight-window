@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,7 +8,7 @@ plugins {
 // Signing details are read from keystore.properties, which stays out of version
 // control. Without that file the project still builds and tests; only the signed
 // release bundle needs it.
-val keystoreProperties = java.util.Properties().apply {
+val keystoreProperties = Properties().apply {
     val file = rootProject.file("keystore.properties")
     if (file.exists()) file.inputStream().use { load(it) }
 }

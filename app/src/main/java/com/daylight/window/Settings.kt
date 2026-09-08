@@ -1,10 +1,13 @@
 package com.daylight.window
 
 import android.content.Context
+import java.util.Calendar
 
 /**
- * The few choices the app remembers. Kept deliberately small: the point of the app
- * is that you stop making decisions, not that you tune it.
+ * The choices the app remembers, and what you have actually spent today.
+ *
+ * Deliberately small: the point of the app is that you stop making decisions, not
+ * that you tune it.
  */
 class Settings(context: Context) {
 
@@ -21,23 +24,31 @@ class Settings(context: Context) {
             prefs.edit().putInt(KEY_SKIN, value).apply()
         }
 
-    /**
-     * The UV the app will not send you out above. Defaults to 1, which for type I skin
-     * buys roughly two and a half hours before pinking — the setting that yields the
-     * most time outdoors per unit of accumulated exposure.
-     */
-    var uvLimit: Double
-        get() = prefs.getFloat(KEY_LIMIT, DEFAULT_UV_LIMIT).toDouble()
-        set(value) {
-            require(value > 0) { "UV limit must be above zero, got $value" }
-            prefs.edit().putFloat(KEY_LIMIT, value.toFloat()).apply()
+    /** How much sun you are willing to collect in a day. */
+    var riskProfile: RiskProfile
+        get() {
+            val stored = prefs.getString(KEY_PROFILE, null) ?: return RiskProfile.DEFAULT
+            return RiskProfile.fromName(stored)
         }
+        set(value) = prefs.edit().putString(KEY_PROFILE, value.name).apply()
 
-    var remindersOn: Boolean
-        get() = prefs.getBoolean(KEY_REMIND, false)
-        set(value) = prefs.edit().putBoolean(KEY_REMIND, value).apply()
+    /** One longer session, or two shorter ones. */
+    var planShape: DayPlan.Shape
+        get() {
+            val stored = prefs.getString(KEY_SHAPE, null) ?: return DayPlan.Shape.TWO_SESSIONS
+            return DayPlan.Shape.valueOf(stored)
+        }
+        set(value) = prefs.edit().putString(KEY_SHAPE, value.name).apply()
 
-    /** Last known position, so the app can show something before the fix arrives. */
+    /** Alarm, notification, or nothing. */
+    var alertStyle: AlertStyle
+        get() {
+            val stored = prefs.getString(KEY_ALERTS, null) ?: return AlertStyle.DEFAULT
+            return AlertStyle.fromName(stored)
+        }
+        set(value) = prefs.edit().putString(KEY_ALERTS, value.name).apply()
+
+    /** Last known position, so the app can show something before a fix arrives. */
     var lastLatitude: Double
         get() = prefs.getFloat(KEY_LAT, Float.NaN).toDouble()
         set(value) = prefs.edit().putFloat(KEY_LAT, value.toFloat()).apply()
@@ -48,14 +59,65 @@ class Settings(context: Context) {
 
     fun hasStoredLocation(): Boolean = !lastLatitude.isNaN() && !lastLongitude.isNaN()
 
+    // ---- What you have actually spent today -------------------------------------
+    //
+    // Only meaningful if you tell the app when you go out. Untracked days simply
+    // follow the plan; a tracked day knows the real total.
+
+    /**
+     * Sun collected today, in standard doses. Resets on its own when the date
+     * changes, so a forgotten session never carries into tomorrow.
+     */
+    var doseUsedToday: Double
+        get() {
+            rollOverIfNewDay()
+            return prefs.getFloat(KEY_USED, 0f).toDouble()
+        }
+        private set(value) = prefs.edit().putFloat(KEY_USED, value.toFloat()).apply()
+
+    fun addDoseUsed(dose: Double) {
+        require(dose >= 0) { "Dose added must not be negative, got $dose" }
+        rollOverIfNewDay()
+        doseUsedToday = doseUsedToday + dose
+    }
+
+    /** Minute of the day a manually started trip began, or null if none is running. */
+    var tripStartedAtMinute: Int?
+        get() {
+            rollOverIfNewDay()
+            val stored = prefs.getInt(KEY_TRIP_START, -1)
+            return if (stored < 0) null else stored
+        }
+        set(value) = prefs.edit().putInt(KEY_TRIP_START, value ?: -1).apply()
+
+    /**
+     * Clears today's tally when the calendar date has moved on. Called before every
+     * read so a stale figure can never be returned.
+     */
+    private fun rollOverIfNewDay() {
+        val today = Calendar.getInstance().let {
+            it.get(Calendar.YEAR) * 1000 + it.get(Calendar.DAY_OF_YEAR)
+        }
+        if (prefs.getInt(KEY_DAY_STAMP, -1) != today) {
+            prefs.edit()
+                .putInt(KEY_DAY_STAMP, today)
+                .putFloat(KEY_USED, 0f)
+                .putInt(KEY_TRIP_START, -1)
+                .apply()
+        }
+    }
+
     companion object {
         const val DEFAULT_SKIN_TYPE = 1
-        const val DEFAULT_UV_LIMIT = 1.0f
 
         private const val KEY_SKIN = "skin_type"
-        private const val KEY_LIMIT = "uv_limit"
-        private const val KEY_REMIND = "reminders_on"
+        private const val KEY_PROFILE = "risk_profile"
+        private const val KEY_SHAPE = "plan_shape"
+        private const val KEY_ALERTS = "alert_style"
         private const val KEY_LAT = "last_latitude"
         private const val KEY_LON = "last_longitude"
+        private const val KEY_USED = "dose_used_today"
+        private const val KEY_TRIP_START = "trip_started_at"
+        private const val KEY_DAY_STAMP = "day_stamp"
     }
 }

@@ -21,13 +21,32 @@ class SunModelTest {
         0.3, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     )
 
-    // Published burn times are the yardstick: fair skin reddens after roughly a
-    // quarter of an hour at UV 8, and around an hour at UV 2.
+    // The reddening thresholds come from measured medians (Young et al. 2018,
+    // PMC6158343, Table 1). This checks the arithmetic reproduces them: type I is
+    // 2.1 standard erythema doses, so at UV 8 — which delivers 0.12 of a dose per
+    // minute — the threshold should be reached in about eighteen minutes.
     @Test
-    fun `pinking time matches published burn times for the fairest skin`() {
-        assertEquals(17, SunModel.minutesUntilPinking(8.0, skinType = 1))
-        assertEquals(67, SunModel.minutesUntilPinking(2.0, skinType = 1))
-        assertEquals(133, SunModel.minutesUntilPinking(1.0, skinType = 1))
+    fun `pinking time reproduces the measured threshold for the fairest skin`() {
+        assertEquals(18, SunModel.minutesUntilPinking(8.0, skinType = 1))
+        assertEquals(70, SunModel.minutesUntilPinking(2.0, skinType = 1))
+        assertEquals(140, SunModel.minutesUntilPinking(1.0, skinType = 1))
+    }
+
+    // Every measured threshold, checked against the arithmetic rather than trusting
+    // one type. At UV 4 a minute delivers 0.06 of a dose, so the expected time is
+    // simply the type's threshold divided by that.
+    @Test
+    fun `every skin type reproduces its measured threshold`() {
+        val measuredSed = mapOf(1 to 2.1, 2 to 2.6, 3 to 3.2, 4 to 5.6, 5 to 7.5, 6 to 15.2)
+        val dosePerMinuteAtUv4 = 4 * 0.015
+        for ((type, sed) in measuredSed) {
+            val expected = Math.round(sed / dosePerMinuteAtUv4).toInt()
+            assertEquals(
+                "Type $type should reach its measured threshold at the expected time",
+                expected,
+                SunModel.minutesUntilPinking(4.0, skinType = type)
+            )
+        }
     }
 
     @Test
@@ -35,7 +54,19 @@ class SunModelTest {
         val fairest = SunModel.minutesUntilPinking(3.0, skinType = 1)!!
         val darkest = SunModel.minutesUntilPinking(3.0, skinType = 6)!!
         assertTrue("Type VI should tolerate longer than type I", darkest > fairest)
-        assertEquals(5.0, darkest.toDouble() / fairest, 0.2)
+        // The measured medians put type VI at 15.2 doses against type I's 2.1.
+        assertEquals(15.2 / 2.1, darkest.toDouble() / fairest, 0.1)
+    }
+
+    @Test
+    fun `thresholds rise monotonically across the skin types`() {
+        val times = (1..6).map { SunModel.minutesUntilPinking(3.0, skinType = it)!! }
+        for (i in 1 until times.size) {
+            assertTrue(
+                "Type ${i + 1} should tolerate at least as long as type $i",
+                times[i] > times[i - 1]
+            )
+        }
     }
 
     @Test

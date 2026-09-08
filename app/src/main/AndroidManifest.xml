@@ -28,6 +28,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".SourcesActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+
         <receiver
             android:name=".AlarmReceiver"
             android:exported="false">

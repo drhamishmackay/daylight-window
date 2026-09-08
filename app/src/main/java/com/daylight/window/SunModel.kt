@@ -13,19 +13,32 @@ object SunModel {
 
     /**
      * The dose that just barely reddens skin, by Fitzpatrick type, in standard
-     * erythema doses (the unit UV agencies publish). Type I reddens at the lowest
-     * dose; each later type tolerates more before showing any colour.
+     * erythema doses.
+     *
+     * These are measured medians from Young et al., Journal of Investigative
+     * Dermatology 2018 (PMC6158343), Table 1 — 39 people, six to seven per skin
+     * type, doses set individually against each person's own sunburn threshold.
+     *
+     * Two cautions travel with these numbers. The sample is small, and measured
+     * thresholds overlap heavily between neighbouring skin types: a Colombian
+     * series of 113 people found skin type predicts individual threshold only
+     * moderately (correlation 0.5 to 0.69), with people of different types sharing
+     * identical thresholds. So these are population medians, not a reading of any
+     * one person, and an individual can sit well either side of them.
      */
     private val MINIMAL_REDDENING_DOSE = mapOf(
-        1 to 2.0, 2 to 2.5, 3 to 3.0, 4 to 4.5, 5 to 6.0, 6 to 10.0
+        1 to 2.1, 2 to 2.6, 3 to 3.2, 4 to 5.6, 5 to 7.5, 6 to 15.2
     )
 
     /**
-     * UV index 1 means 25 milliwatts of sunburn-weighted energy per square metre,
-     * and one standard erythema dose is 100 joules per square metre. So a minute
+     * UV index 1 means 25 milliwatts of sunburn-weighted energy per square metre
+     * (the UV index is defined as 40 times the effective irradiance in watts per
+     * square metre), and one standard erythema dose is 100 joules per square metre.
+     * Both are international definitions agreed by the CIE and used by the World
+     * Meteorological Organization and ICNIRP, not choices made here. So a minute
      * spent at UV index 1 delivers 25 * 60 / 100 / 1000 of a dose.
      */
-    private const val DOSE_PER_UV_PER_MINUTE = 25.0 * 60.0 / 100.0 / 1000.0
+    const val DOSE_PER_UV_PER_MINUTE = 25.0 * 60.0 / 100.0 / 1000.0
 
     /** Shorter than this is not worth the trip outside. */
     const val SHORTEST_USEFUL_WINDOW_MINUTES = 20

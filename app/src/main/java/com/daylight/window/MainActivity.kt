@@ -1,9 +1,11 @@
 package com.daylight.window
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.View
@@ -11,7 +13,6 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.LinearLayout
-import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,20 +30,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusText: TextView
     private lateinit var headlineText: TextView
     private lateinit var detailText: TextView
-    private lateinit var peakText: TextView
+    private lateinit var safetyText: TextView
+    private lateinit var planList: LinearLayout
+    private lateinit var totalText: TextView
+    private lateinit var tripButton: Button
+    private lateinit var tripStatus: TextView
     private lateinit var curve: UvCurveView
-    private lateinit var windowList: LinearLayout
-    private lateinit var summaryValue: TextView
-    private lateinit var summaryBar: ProgressBar
-    private lateinit var summaryHint: TextView
+    private lateinit var peakText: TextView
     private lateinit var skinSpinner: Spinner
-    private lateinit var limitSpinner: Spinner
-    private lateinit var remindButton: Button
+    private lateinit var profileSpinner: Spinner
+    private lateinit var shapeSpinner: Spinner
+    private lateinit var alertSpinner: Spinner
+    private lateinit var profileNote: TextView
 
     private var forecast: DayForecast? = null
-
-    /** The limits offered, in the order they appear in the picker. */
-    private val limitChoices = listOf(1.0, 2.0, 3.0, 5.0, 99.0)
 
     private val locationPermission = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -53,46 +54,49 @@ class MainActivity : AppCompatActivity() {
     private val notificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
-        settings.remindersOn = granted
-        if (granted) {
-            Reminders.scheduleDailyReplan(this)
-            Reminders.scheduleNextWindow(this)
-        }
-        updateRemindButton()
+        if (!granted) settings.alertStyle = AlertStyle.IN_APP_ONLY
+        syncAlerts()
+        refresh()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         settings = Settings(this)
-        Reminders.createChannel(this)
+        Reminders.createChannels(this)
 
         placeText = findViewById(R.id.place)
         statusText = findViewById(R.id.status)
         headlineText = findViewById(R.id.headline)
         detailText = findViewById(R.id.detail)
-        peakText = findViewById(R.id.peak)
+        safetyText = findViewById(R.id.safety)
+        planList = findViewById(R.id.plan)
+        totalText = findViewById(R.id.total)
+        tripButton = findViewById(R.id.trip)
+        tripStatus = findViewById(R.id.trip_status)
         curve = findViewById(R.id.curve)
-        windowList = findViewById(R.id.windows)
-        summaryValue = findViewById(R.id.summary_value)
-        summaryBar = findViewById(R.id.summary_bar)
-        summaryHint = findViewById(R.id.summary_hint)
+        peakText = findViewById(R.id.peak)
         skinSpinner = findViewById(R.id.skin)
-        limitSpinner = findViewById(R.id.limit)
-        remindButton = findViewById(R.id.remind)
+        profileSpinner = findViewById(R.id.profile)
+        shapeSpinner = findViewById(R.id.shape)
+        alertSpinner = findViewById(R.id.alerts)
+        profileNote = findViewById(R.id.profile_note)
 
         paintCurve()
         setUpPickers()
+
         findViewById<Button>(R.id.relocate).setOnClickListener { requestLocation() }
-        remindButton.setOnClickListener { toggleReminders() }
-        updateRemindButton()
+        findViewById<Button>(R.id.sources).setOnClickListener {
+            startActivity(Intent(this, SourcesActivity::class.java))
+        }
+        tripButton.setOnClickListener { toggleTrip() }
 
         requestLocation()
     }
 
     override fun onResume() {
         super.onResume()
-        forecast?.let { show(it) }
+        refresh()
     }
 
     private fun paintCurve() {
@@ -108,32 +112,67 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setUpPickers() {
-        skinSpinner.adapter = ArrayAdapter.createFromResource(
-            this, R.array.skin_types, android.R.layout.simple_spinner_item
-        ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-        skinSpinner.setSelection(settings.skinType - 1)
-        skinSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
-                settings.skinType = pos + 1
-                forecast?.let { show(it) }
-                if (settings.remindersOn) Reminders.scheduleNextWindow(this@MainActivity)
-            }
-            override fun onNothingSelected(p: AdapterView<*>?) = Unit
+        bind(skinSpinner, R.array.skin_types, settings.skinType - 1) { position ->
+            settings.skinType = position + 1
         }
 
-        limitSpinner.adapter = ArrayAdapter.createFromResource(
-            this, R.array.uv_limits, android.R.layout.simple_spinner_item
+        val profiles = RiskProfile.entries
+        bind(
+            profileSpinner,
+            profiles.map { it.shortLabel },
+            profiles.indexOf(settings.riskProfile)
+        ) { position ->
+            settings.riskProfile = profiles[position]
+        }
+
+        val shapes = listOf(DayPlan.Shape.TWO_SESSIONS, DayPlan.Shape.ONE_SESSION)
+        bind(
+            shapeSpinner,
+            listOf(getString(R.string.shape_two), getString(R.string.shape_one)),
+            shapes.indexOf(settings.planShape)
+        ) { position ->
+            settings.planShape = shapes[position]
+        }
+
+        val styles = AlertStyle.entries
+        bind(alertSpinner, styles.map { it.label }, styles.indexOf(settings.alertStyle)) { position ->
+            val chosen = styles[position]
+            settings.alertStyle = chosen
+            if (chosen != AlertStyle.IN_APP_ONLY &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                syncAlerts()
+            }
+        }
+    }
+
+    private fun bind(
+        spinner: Spinner,
+        labels: List<String>,
+        selected: Int,
+        onChosen: (Int) -> Unit
+    ) {
+        spinner.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_item, labels
         ).apply { setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
-        limitSpinner.setSelection(limitChoices.indexOf(settings.uvLimit).coerceAtLeast(0))
-        limitSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+        spinner.setSelection(selected.coerceAtLeast(0))
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
-                settings.uvLimit = limitChoices[pos]
-                forecast?.let { show(it) }
-                if (settings.remindersOn) Reminders.scheduleNextWindow(this@MainActivity)
+                onChosen(pos)
+                refresh()
             }
             override fun onNothingSelected(p: AdapterView<*>?) = Unit
         }
     }
+
+    private fun bind(spinner: Spinner, arrayRes: Int, selected: Int, onChosen: (Int) -> Unit) =
+        bind(spinner, resources.getStringArray(arrayRes).toList(), selected, onChosen)
+
+    // ---- Location and forecast ---------------------------------------------------
 
     private fun requestLocation() {
         val fine = ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
@@ -168,10 +207,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * With no fresh fix, fall back to the last place we knew. If there has never been
-     * one, say so plainly rather than guessing at a city the user is not in.
-     */
     private fun useStoredOrExplain() {
         if (settings.hasStoredLocation()) {
             loadForecast(settings.lastLatitude, settings.lastLongitude)
@@ -179,6 +214,7 @@ class MainActivity : AppCompatActivity() {
             statusText.text = getString(R.string.status_no_location)
             headlineText.text = getString(R.string.headline_no_location)
             detailText.text = getString(R.string.detail_no_location)
+            safetyText.text = ""
             placeText.text = getString(R.string.place_unknown)
         }
     }
@@ -192,129 +228,196 @@ class MainActivity : AppCompatActivity() {
             try {
                 val day = Forecast.fetch(latitude, longitude)
                 forecast = day
-                show(day)
+                placeText.text = day.placeName
+                syncAlerts()
+                refresh()
             } catch (e: ForecastUnavailable) {
                 statusText.text = getString(R.string.status_offline)
                 headlineText.text = getString(R.string.headline_offline)
                 detailText.text = e.message ?: getString(R.string.detail_offline)
+                safetyText.text = ""
             }
         }
     }
 
-    private fun show(day: DayForecast) {
-        val calendar = Calendar.getInstance()
-        val nowMinute = calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
-        val result = Verdict.decide(day, settings.skinType, settings.uvLimit, nowMinute)
-
-        placeText.text = day.placeName
-        statusText.text = result.status
-        headlineText.text = result.headline
-        detailText.text = result.detail
-
-        val accent = when (result.mood) {
-            Verdict.Mood.GO -> color(R.color.uv_none)
-            Verdict.Mood.WAIT -> color(R.color.uv_low)
-            else -> color(R.color.uv_real)
+    private fun syncAlerts() {
+        if (settings.alertStyle == AlertStyle.IN_APP_ONLY) {
+            Reminders.cancelAll(this)
+        } else {
+            Reminders.scheduleDailyReplan(this)
+            Reminders.scheduleToday(this)
         }
-        statusText.setTextColor(accent)
+    }
 
-        peakText.text = getString(
-            R.string.peak_and_limit,
-            String.format("%.1f", result.peakUv),
-            if (settings.uvLimit >= 99) getString(R.string.limit_none)
-            else settings.uvLimit.toInt().toString()
+    // ---- The screen --------------------------------------------------------------
+
+    private fun refresh() {
+        val day = forecast ?: return
+        val nowMinute = Calendar.getInstance().let {
+            it.get(Calendar.HOUR_OF_DAY) * 60 + it.get(Calendar.MINUTE)
+        }
+
+        val plan = DayPlan.build(
+            forecast = day,
+            skinType = settings.skinType,
+            budget = settings.riskProfile.dailyDose,
+            shape = settings.planShape
+        )
+        val advice = Advice.describe(
+            plan = plan,
+            profile = settings.riskProfile,
+            nowMinute = nowMinute,
+            minutesAlreadySpentOutside = 0,
+            forecast = day
         )
 
+        statusText.text = statusWord(advice.state)
+        statusText.setTextColor(moodColour(advice.state))
+        headlineText.text = advice.headline
+        detailText.text = advice.detail
+        safetyText.text = advice.safetyLine
+
+        profileNote.text = settings.riskProfile.plainDescription
+
+        renderPlan(plan, nowMinute)
+        renderTotal(plan)
+        renderTrip(day, plan, nowMinute)
+
+        val samples = SunModel.interpolate(day.hourlyUv)
+        peakText.text = getString(
+            R.string.peak_today,
+            String.format("%.1f", samples.maxOf { it.uv })
+        )
         curve.setDay(
-            SunModel.interpolate(day.hourlyUv),
-            result.windows,
+            samples,
+            plan.sessions.map {
+                SunModel.Window(it.startMinute, it.endMinute, it.peakUv, 0.0)
+            },
             day.sunriseMinute,
             day.sunsetMinute,
-            settings.uvLimit
+            uvLimit = 0.0
         )
-
-        renderWindows(result, nowMinute)
-        renderSummary(result)
     }
 
-    private fun renderWindows(result: Verdict.Result, nowMinute: Int) {
-        windowList.removeAllViews()
-        if (result.windows.isEmpty()) {
-            val empty = layoutInflater.inflate(R.layout.row_window, windowList, false)
-            empty.findViewById<TextView>(R.id.row_time).visibility = View.GONE
-            empty.findViewById<TextView>(R.id.row_cost).visibility = View.GONE
-            empty.findViewById<TextView>(R.id.row_note).text =
-                getString(R.string.no_windows_row, settings.uvLimit.toInt())
-            windowList.addView(empty)
+    private fun statusWord(state: Advice.State) = getString(
+        when (state) {
+            Advice.State.OUT_NOW -> R.string.status_go
+            Advice.State.LATER -> R.string.status_later
+            Advice.State.DONE, Advice.State.SPENT -> R.string.status_done
+            Advice.State.UNPLANNED -> R.string.status_unplanned
+        }
+    )
+
+    private fun moodColour(state: Advice.State) = color(
+        when (state) {
+            Advice.State.OUT_NOW -> R.color.uv_none
+            Advice.State.LATER, Advice.State.UNPLANNED -> R.color.uv_low
+            else -> R.color.ink_soft
+        }
+    )
+
+    private fun renderPlan(plan: DayPlan.Plan, nowMinute: Int) {
+        planList.removeAllViews()
+
+        if (plan.wholeDayIsSafe) {
+            addPlanRow(
+                getString(
+                    R.string.plan_all_day,
+                    Format.clock(plan.sunriseMinute),
+                    Format.clock(plan.sunsetMinute)
+                ),
+                getString(R.string.plan_all_day_note),
+                R.color.uv_none
+            )
             return
         }
 
-        for (window in result.windows) {
-            val row = layoutInflater.inflate(R.layout.row_window, windowList, false)
-            val live = nowMinute in window.startMinute..window.endMinute
-            val past = nowMinute > window.endMinute
-
-            row.findViewById<TextView>(R.id.row_time).text = getString(
-                R.string.window_range,
-                Format.clock(window.startMinute),
-                Format.clock(window.endMinute)
+        if (plan.sessions.isEmpty()) {
+            addPlanRow(
+                getString(R.string.plan_none),
+                getString(R.string.plan_none_note),
+                R.color.uv_real
             )
+            return
+        }
 
-            val state = when {
-                live -> getString(R.string.window_open_now)
-                past -> getString(R.string.window_passed)
-                else -> ""
+        plan.sessions.forEachIndexed { index, session ->
+            val past = nowMinute > session.endMinute
+            val running = nowMinute in session.startMinute until session.endMinute
+            val label = getString(
+                if (index == 0) R.string.plan_first else R.string.plan_second
+            )
+            val note = when {
+                running -> getString(R.string.plan_running, Format.duration(session.endMinute - nowMinute))
+                past -> getString(R.string.plan_past)
+                else -> getString(R.string.plan_length, Format.duration(session.lengthMinutes))
             }
-            row.findViewById<TextView>(R.id.row_note).text = getString(
-                R.string.window_note,
-                Format.duration(window.lengthMinutes),
-                String.format("%.1f", window.peakUv),
-                state
+            addPlanRow(
+                "$label  ${Format.clock(session.startMinute)} – ${Format.clock(session.endMinute)}",
+                note,
+                if (running) R.color.uv_none else R.color.ink_soft,
+                dimmed = past
             )
-
-            val pinkAt = SunModel.minutesUntilPinking(window.peakUv, settings.skinType)
-            row.findViewById<TextView>(R.id.row_cost).text =
-                if (pinkAt == null || window.dosePercent < 100) getString(R.string.window_safe)
-                else getString(R.string.window_cap, Format.duration(pinkAt))
-
-            row.alpha = if (past) 0.45f else 1f
-            windowList.addView(row)
         }
     }
 
-    private fun renderSummary(result: Verdict.Result) {
-        summaryValue.text = if (result.totalMinutesOutside > 0)
-            Format.duration(result.totalMinutesOutside) else getString(R.string.summary_none)
-        summaryBar.progress = result.totalDosePercent.coerceIn(0.0, 100.0).toInt()
-        summaryHint.text = when {
-            result.totalMinutesOutside == 0 -> getString(R.string.summary_hint_none)
-            result.totalDosePercent < 100 ->
-                getString(R.string.summary_hint_ok, Format.percent(result.totalDosePercent))
-            else -> getString(R.string.summary_hint_over)
+    private fun addPlanRow(title: String, note: String, colourRes: Int, dimmed: Boolean = false) {
+        val row = layoutInflater.inflate(R.layout.row_plan, planList, false)
+        row.findViewById<TextView>(R.id.row_title).text = title
+        row.findViewById<TextView>(R.id.row_note).apply {
+            text = note
+            setTextColor(color(colourRes))
         }
+        if (dimmed) row.alpha = 0.45f
+        planList.addView(row)
     }
 
-    private fun toggleReminders() {
-        if (settings.remindersOn) {
-            settings.remindersOn = false
-            Reminders.cancelAll(this)
-            updateRemindButton()
-            return
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+    private fun renderTotal(plan: DayPlan.Plan) {
+        totalText.text = if (plan.totalMinutes > 0) {
+            getString(R.string.total_time, Format.duration(plan.totalMinutes))
         } else {
-            settings.remindersOn = true
-            Reminders.scheduleDailyReplan(this)
-            Reminders.scheduleNextWindow(this)
-            updateRemindButton()
+            getString(R.string.total_none)
         }
     }
 
-    private fun updateRemindButton() {
-        remindButton.text = getString(
-            if (settings.remindersOn) R.string.reminders_on else R.string.reminders_off
-        )
+    private fun renderTrip(day: DayForecast, plan: DayPlan.Plan, nowMinute: Int) {
+        val started = settings.tripStartedAtMinute
+
+        if (started == null) {
+            tripButton.text = getString(R.string.trip_start)
+            val remaining = plan.budget - settings.doseUsedToday
+            val couldStay = DayPlan.minutesRemainingFrom(day, nowMinute, remaining)
+            val uvNow = SunModel.uvAt(SunModel.interpolate(day.hourlyUv), nowMinute)
+            tripStatus.text = Advice.unplannedTripAdvice(couldStay, uvNow)
+        } else {
+            val elapsed = nowMinute - started
+            tripButton.text = getString(R.string.trip_stop)
+            val remaining = plan.budget - settings.doseUsedToday -
+                DayPlan.doseBetween(SunModel.interpolate(day.hourlyUv), started, nowMinute)
+            val left = DayPlan.minutesRemainingFrom(day, nowMinute, remaining)
+            tripStatus.text = getString(
+                R.string.trip_running,
+                Format.duration(maxOf(0, elapsed)),
+                Format.duration(left)
+            )
+        }
+    }
+
+    private fun toggleTrip() {
+        val day = forecast ?: return
+        val nowMinute = Calendar.getInstance().let {
+            it.get(Calendar.HOUR_OF_DAY) * 60 + it.get(Calendar.MINUTE)
+        }
+        val started = settings.tripStartedAtMinute
+
+        if (started == null) {
+            settings.tripStartedAtMinute = nowMinute
+        } else {
+            val samples = SunModel.interpolate(day.hourlyUv)
+            settings.addDoseUsed(DayPlan.doseBetween(samples, started, nowMinute))
+            settings.tripStartedAtMinute = null
+        }
+        refresh()
     }
 
     private fun color(id: Int) = ContextCompat.getColor(this, id)

@@ -13,4 +13,5 @@
     <color name="uv_none">#FF4A8F6B</color>
     <color name="uv_low">#FFC9A227</color>
     <color name="uv_real">#FFC4562E</color>
+    <color name="safety_panel">#FFEFEAE0</color>
 </resources>

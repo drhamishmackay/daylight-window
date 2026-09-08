@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A quiet tinted panel for the safety verdict: present enough to read as a
+     statement, not so loud that it reads as a warning. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/safety_panel" />
+    <corners android:radius="11dp" />
+</shape>

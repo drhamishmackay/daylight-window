@@ -7,53 +7,65 @@
     <string name="use_my_location">Use my location</string>
 
     <string name="status_loading">Loading</string>
-    <string name="headline_loading">Checking today\'s sky…</string>
-    <string name="detail_loading">Fetching the hour-by-hour forecast for where you are.</string>
-
+    <string name="status_go">Go now</string>
+    <string name="status_later">Later today</string>
+    <string name="status_done">Finished for today</string>
+    <string name="status_unplanned">Off plan</string>
     <string name="status_offline">Offline</string>
-    <string name="headline_offline">Could not reach the forecast.</string>
-    <string name="detail_offline">Check your connection and pull to try again.</string>
-
     <string name="status_no_location">No location yet</string>
-    <string name="headline_no_location">Where are you?</string>
-    <string name="detail_no_location">Allow location access so the app can read the UV forecast for your exact spot. Nothing leaves your phone except the coordinates sent to the weather service.</string>
 
-    <string name="today">Today</string>
-    <string name="peak_and_limit">peak %1$s · limit %2$s</string>
-    <string name="limit_none">none</string>
+    <string name="headline_loading">Working out today\'s plan…</string>
+    <string name="detail_loading">Reading the hour-by-hour forecast for where you are.</string>
+    <string name="headline_offline">Could not reach the forecast.</string>
+    <string name="detail_offline">Check your connection and open the app again.</string>
+    <string name="headline_no_location">Where are you?</string>
+    <string name="detail_no_location">Allow location access so the app can read the forecast for your exact spot. Your coordinates go to the weather service and nowhere else.</string>
+
+    <string name="todays_plan">Today\'s plan</string>
+    <string name="total_time">%1$s outside</string>
+    <string name="total_none">Nothing today</string>
+
+    <string name="plan_first">First time out</string>
+    <string name="plan_second">Second time out</string>
+    <string name="plan_length">%1$s outside</string>
+    <string name="plan_running">Running now — %1$s left</string>
+    <string name="plan_past">Done</string>
+    <string name="plan_all_day">All day  %1$s – %2$s</string>
+    <string name="plan_all_day_note">The sun is gentle enough today that you can be out from dawn to dusk without reaching your limit.</string>
+    <string name="plan_none">No safe time outside today</string>
+    <string name="plan_none_note">The sun is strong enough that even a short spell would take you past your daily limit. If you go out, cover up.</string>
+
+    <string name="sun_today">The sun today</string>
+    <string name="peak_today">strongest %1$s</string>
     <string name="chart_your_limit">your limit</string>
     <string name="chart_now">now</string>
 
-    <string name="window_range">%1$s – %2$s</string>
-    <string name="window_note">%1$s · UV to %2$s%3$s</string>
-    <string name="window_open_now"> · open now</string>
-    <string name="window_passed"> · passed</string>
-    <string name="window_safe">safe</string>
-    <string name="window_cap">cap %1$s</string>
-    <string name="no_windows_row">No stretch of daylight stays under UV %1$d today.</string>
-
-    <string name="summary_label">Time outside if you take every window</string>
-    <string name="summary_none">none</string>
-    <string name="summary_hint_none">No gentle daylight today.</string>
-    <string name="summary_hint_ok">That uses %1$s of what it would take to pink your skin — no burn, and only a small amount of the slow kind of exposure.</string>
-    <string name="summary_hint_over">Taking all of it would pass your pink threshold. Break it up, or take the gentlest window only.</string>
+    <string name="going_out_now">Going out right now</string>
+    <string name="trip_start">I am going outside now</string>
+    <string name="trip_stop">I am back inside</string>
+    <string name="trip_running">Outside %1$s so far. About %2$s left before you reach today\'s limit.</string>
 
     <string name="label_skin">Skin type</string>
-    <string name="label_limit">Never go out above</string>
-    <string name="label_remind">Remind me when a window opens</string>
-    <string name="reminders_on">On</string>
-    <string name="reminders_off">Turn on</string>
+    <string name="label_profile">How much sun per day</string>
+    <string name="label_shape">How to split your time</string>
+    <string name="label_alerts">How to tell me</string>
+    <string name="shape_two">Two shorter times outside</string>
+    <string name="shape_one">One longer time outside</string>
 
-    <string name="channel_name">Daylight windows</string>
-    <string name="channel_description">Tells you when a gentle stretch of daylight opens.</string>
-    <string name="notify_title">Your daylight window is open</string>
-    <string name="notify_body_negligible">Gentle until %1$s. UV is low enough to stay out the whole window.</string>
-    <string name="notify_body_limited">Gentle until %1$s. Your skin would take about %2$s to start pinking.</string>
+    <string name="where_numbers_come_from">Where these numbers come from</string>
+    <string name="sources_title">Where these numbers come from</string>
+    <string name="sources_intro">Every figure this app uses comes from a published source. None of them were chosen by the app. Here they are, so you can check them yourself.</string>
+    <string name="read_the_source">Read the source</string>
+    <string name="done">Done</string>
 
-    <string name="footer_number">The number that matters. Each window shows how long you could stay before your skin would just start to pink, and the bar shows how much of that allowance the day\'s windows use up. Staying well inside it means no burn, and the ultraviolet you do collect is the small, slow kind — which is what adds up over decades into ageing.</string>
-    <string name="footer_how">How windows are picked. The app reads the hourly forecast for your exact spot, cloud cover already included, and marks every stretch of daylight sitting at or under your limit.</string>
-    <string name="footer_caveat">Honest caveat. No amount of ultraviolet is completely free of risk — the risk falls smoothly as UV falls but never reaches zero. This finds the gentlest daylight of your day. It is not medical advice.</string>
-    <string name="footer_source">Forecast data from Open-Meteo.</string>
+    <string name="channel_go_out">Time to go outside</string>
+    <string name="channel_go_out_description">Tells you when your outdoor time starts.</string>
+    <string name="channel_come_in">Time to come back in</string>
+    <string name="channel_come_in_description">Tells you when to head back inside so you stay under your daily limit.</string>
+    <string name="alert_go_out_title">Time to go outside</string>
+    <string name="alert_come_in_title">Time to head back in</string>
+
+    <string name="footer_caveat">No amount of sun is completely free of risk — that is measured, not a disclaimer. The risk falls as the sun weakens but never reaches zero. This app finds the gentlest daylight of your day and keeps your total under a published safety limit. It is not medical advice.</string>
 
     <string-array name="skin_types">
         <item>I — always burns, never tans</item>
@@ -62,13 +74,5 @@
         <item>IV — rarely burns, tans easily</item>
         <item>V — very rarely burns</item>
         <item>VI — never burns</item>
-    </string-array>
-
-    <string-array name="uv_limits">
-        <item>UV 1 — gentlest, most hours per unit of damage</item>
-        <item>UV 2 — more daylight, more exposure</item>
-        <item>UV 3 — public-health line for average skin</item>
-        <item>UV 5 — permissive</item>
-        <item>No limit — show me everything</item>
     </string-array>
 </resources>

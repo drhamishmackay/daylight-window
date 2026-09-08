@@ -14,32 +14,44 @@ import kotlinx.coroutines.runBlocking
 import java.util.Calendar
 
 /**
- * Wakes the phone when a gentle window opens, and again each morning to work out the
- * day's windows afresh. Alarms are re-armed after a reboot so the habit never breaks.
+ * Wakes the phone when it is time to go out or come back in, and re-plans each morning.
+ *
+ * Alarms are held in a fixed set of slots (see [Alerts]) and overwritten rather than
+ * added, so they shift with the sun instead of accumulating. Everything is re-armed
+ * after a reboot.
  */
 object Reminders {
 
-    const val CHANNEL_ID = "daylight_windows"
-    private const val REQUEST_WINDOW = 1001
-    private const val REQUEST_DAILY = 1002
+    const val CHANNEL_GO_OUT = "daylight_go_out"
+    const val CHANNEL_COME_IN = "daylight_come_in"
 
-    /** The morning re-plan runs at this hour, before most first windows open. */
-    private const val DAILY_REPLAN_HOUR = 5
+    private const val REQUEST_DAILY_REPLAN = 1002
 
-    fun createChannel(context: Context) {
+    /** The morning re-plan runs before the earliest plausible first session. */
+    private const val DAILY_REPLAN_HOUR = 4
+
+    fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            context.getString(R.string.channel_name),
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = context.getString(R.string.channel_description)
-        }
-        context.getSystemService(NotificationManager::class.java)
-            .createNotificationChannel(channel)
+        val manager = context.getSystemService(NotificationManager::class.java)
+
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_GO_OUT,
+                context.getString(R.string.channel_go_out),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply { description = context.getString(R.string.channel_go_out_description) }
+        )
+
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_COME_IN,
+                context.getString(R.string.channel_come_in),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply { description = context.getString(R.string.channel_come_in_description) }
+        )
     }
 
-    /** Arms the morning re-plan, which in turn arms each day's window alarms. */
+    /** Arms the morning re-plan, which in turn arms each day's alerts. */
     fun scheduleDailyReplan(context: Context) {
         val alarms = context.getSystemService(AlarmManager::class.java)
         val next = Calendar.getInstance().apply {
@@ -53,97 +65,83 @@ object Reminders {
             AlarmManager.RTC_WAKEUP,
             next.timeInMillis,
             AlarmManager.INTERVAL_DAY,
-            pendingIntent(context, REQUEST_DAILY, AlarmReceiver.ACTION_REPLAN)
+            replanIntent(context)
         )
     }
 
     fun cancelAll(context: Context) {
         val alarms = context.getSystemService(AlarmManager::class.java)
-        alarms.cancel(pendingIntent(context, REQUEST_DAILY, AlarmReceiver.ACTION_REPLAN))
-        alarms.cancel(pendingIntent(context, REQUEST_WINDOW, AlarmReceiver.ACTION_WINDOW_OPEN))
+        alarms.cancel(replanIntent(context))
+        for (slot in Alerts.ALL_SLOTS) {
+            alarms.cancel(slotIntent(context, slot, AlertKind.GO_OUT, ""))
+        }
     }
 
     /**
-     * Looks up today's forecast and sets an alarm for the next window that has not
-     * started yet. Called each morning and after every reboot.
+     * Works out today's plan and arms an alarm in each slot it needs. Slots the plan
+     * does not need are cleared, so yesterday's alarm never fires on a day that has no
+     * matching session.
      */
-    fun scheduleNextWindow(context: Context) {
+    fun scheduleToday(context: Context) {
         val settings = Settings(context)
-        if (!settings.remindersOn || !settings.hasStoredLocation()) return
+        if (settings.alertStyle == AlertStyle.IN_APP_ONLY) return
+        if (!settings.hasStoredLocation()) return
 
         val forecast = try {
             runBlocking { Forecast.fetch(settings.lastLatitude, settings.lastLongitude) }
         } catch (e: ForecastUnavailable) {
-            // Without a forecast there is nothing to schedule. The next morning's
-            // re-plan will try again; a missed nudge is not worth waking the user for.
+            // Without a forecast there is nothing to schedule. Tomorrow's re-plan tries
+            // again; a missed nudge is not worth waking someone for.
             return
         }
 
-        val samples = SunModel.interpolate(forecast.hourlyUv)
-        val windows = SunModel.findWindows(
-            samples = samples,
-            sunriseMinute = forecast.sunriseMinute,
-            sunsetMinute = forecast.sunsetMinute,
-            uvLimit = settings.uvLimit,
-            skinType = settings.skinType
+        val plan = DayPlan.build(
+            forecast = forecast,
+            skinType = settings.skinType,
+            budget = settings.riskProfile.dailyDose,
+            shape = settings.planShape
         )
+        val slots = Alerts.slotsFor(plan)
+        val alarms = context.getSystemService(AlarmManager::class.java)
 
         val now = Calendar.getInstance()
         val nowMinute = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-        val next = windows.firstOrNull { it.startMinute > nowMinute } ?: return
 
-        val fireAt = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, next.startMinute / 60)
-            set(Calendar.MINUTE, next.startMinute % 60)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
+        // Clear every slot first, then arm only the ones today actually uses.
+        for (slotId in Alerts.ALL_SLOTS) {
+            alarms.cancel(slotIntent(context, slotId, AlertKind.GO_OUT, ""))
+        }
 
-        val alarms = context.getSystemService(AlarmManager::class.java)
-        val intent = pendingIntent(context, REQUEST_WINDOW, AlarmReceiver.ACTION_WINDOW_OPEN)
+        for (slot in slots) {
+            if (slot.minuteOfDay <= nowMinute) continue
+            val fireAt = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, slot.minuteOfDay / 60)
+                set(Calendar.MINUTE, slot.minuteOfDay % 60)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
 
-        // An exact alarm needs permission on Android 12 and later; without it the
-        // reminder still arrives, just not to the minute.
-        val canBeExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-            alarms.canScheduleExactAlarms()
-        if (canBeExact) {
-            alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAt, intent)
-        } else {
-            alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAt, intent)
+            val intent = slotIntent(context, slot.id, slot.kind, slot.message)
+            val canBeExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                alarms.canScheduleExactAlarms()
+            if (canBeExact) {
+                alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAt, intent)
+            } else {
+                alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, fireAt, intent)
+            }
         }
     }
 
-    fun notifyWindowOpen(context: Context) {
+    /** Shows the alert when its moment arrives. */
+    fun fire(context: Context, kind: AlertKind, message: String) {
         val settings = Settings(context)
-        if (!settings.remindersOn || !settings.hasStoredLocation()) return
+        if (settings.alertStyle == AlertStyle.IN_APP_ONLY) return
 
-        val forecast = try {
-            runBlocking { Forecast.fetch(settings.lastLatitude, settings.lastLongitude) }
-        } catch (e: ForecastUnavailable) {
-            return
-        }
-
-        val samples = SunModel.interpolate(forecast.hourlyUv)
-        val windows = SunModel.findWindows(
-            samples, forecast.sunriseMinute, forecast.sunsetMinute,
-            settings.uvLimit, settings.skinType
+        val goingOut = kind == AlertKind.GO_OUT
+        val channel = if (goingOut) CHANNEL_GO_OUT else CHANNEL_COME_IN
+        val title = context.getString(
+            if (goingOut) R.string.alert_go_out_title else R.string.alert_come_in_title
         )
-
-        val now = Calendar.getInstance()
-        val nowMinute = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-        val open = windows.firstOrNull { nowMinute >= it.startMinute && nowMinute <= it.endMinute }
-            ?: return
-
-        val pinkAt = SunModel.minutesUntilPinking(open.peakUv, settings.skinType)
-        val body = if (pinkAt == null) {
-            context.getString(R.string.notify_body_negligible, Format.clock(open.endMinute))
-        } else {
-            context.getString(
-                R.string.notify_body_limited,
-                Format.clock(open.endMinute),
-                Format.duration(pinkAt)
-            )
-        }
 
         val tap = PendingIntent.getActivity(
             context, 0,
@@ -151,34 +149,58 @@ object Reminders {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(context.getString(R.string.notify_title))
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(tap)
-            .build()
 
-        try {
-            NotificationManagerCompat.from(context).notify(REQUEST_WINDOW, notification)
-        } catch (e: SecurityException) {
-            // The user revoked notification permission after enabling reminders.
-            return
+        // An alarm should behave like an alarm: sound, vibrate, and show over the
+        // lock screen rather than sitting quietly in the shade.
+        if (settings.alertStyle == AlertStyle.ALARM) {
+            builder.setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setFullScreenIntent(tap, true)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setOngoing(false)
         }
 
-        // Chain the next window of the same day.
-        scheduleNextWindow(context)
+        try {
+            NotificationManagerCompat.from(context)
+                .notify(if (goingOut) Alerts.SLOT_FIRST_OUT else Alerts.SLOT_FIRST_IN, builder.build())
+        } catch (e: SecurityException) {
+            // Notification permission was revoked after alerts were switched on.
+            return
+        }
     }
 
-    private fun pendingIntent(context: Context, requestCode: Int, action: String) =
-        PendingIntent.getBroadcast(
-            context,
-            requestCode,
-            Intent(context, AlarmReceiver::class.java).setAction(action),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+    private fun replanIntent(context: Context) = PendingIntent.getBroadcast(
+        context,
+        REQUEST_DAILY_REPLAN,
+        Intent(context, AlarmReceiver::class.java).setAction(AlarmReceiver.ACTION_REPLAN),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    )
+
+    /**
+     * The alarm for one slot. The slot id is the request code, which is what makes a
+     * second call for the same slot replace the first rather than add to it.
+     */
+    private fun slotIntent(
+        context: Context,
+        slotId: Int,
+        kind: AlertKind,
+        message: String
+    ) = PendingIntent.getBroadcast(
+        context,
+        slotId,
+        Intent(context, AlarmReceiver::class.java)
+            .setAction(AlarmReceiver.ACTION_ALERT)
+            .putExtra(AlarmReceiver.EXTRA_KIND, kind.name)
+            .putExtra(AlarmReceiver.EXTRA_MESSAGE, message),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    )
 }
 
 /** Receives the alarms, and re-arms everything after a reboot. */
@@ -187,17 +209,27 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED -> {
-                Reminders.createChannel(context)
+                Reminders.createChannels(context)
                 Reminders.scheduleDailyReplan(context)
-                Reminders.scheduleNextWindow(context)
+                Reminders.scheduleToday(context)
             }
-            ACTION_REPLAN -> Reminders.scheduleNextWindow(context)
-            ACTION_WINDOW_OPEN -> Reminders.notifyWindowOpen(context)
+            ACTION_REPLAN -> Reminders.scheduleToday(context)
+            ACTION_ALERT -> {
+                val kindName = intent.getStringExtra(EXTRA_KIND)
+                    ?: throw IllegalStateException("Alert fired with no kind")
+                val message = intent.getStringExtra(EXTRA_MESSAGE)
+                    ?: throw IllegalStateException("Alert fired with no message")
+                Reminders.fire(context, AlertKind.valueOf(kindName), message)
+                // Chain the rest of today, in case a later slot was added since.
+                Reminders.scheduleToday(context)
+            }
         }
     }
 
     companion object {
         const val ACTION_REPLAN = "com.daylight.window.REPLAN"
-        const val ACTION_WINDOW_OPEN = "com.daylight.window.WINDOW_OPEN"
+        const val ACTION_ALERT = "com.daylight.window.ALERT"
+        const val EXTRA_KIND = "kind"
+        const val EXTRA_MESSAGE = "message"
     }
 }
